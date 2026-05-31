@@ -1,0 +1,14 @@
+body {
+    font-family: Arial;
+    padding: 20px;
+}
+
+#controls {
+    margin-top: 20px;
+    width: 300px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+}
