@@ -1,14 +1,76 @@
+/* Import nowoczesnej czcionki */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
 body {
-    font-family: Arial;
+    font-family: 'Poppins', sans-serif;
+    background: #0a1a33; /* granat */
+    color: white;
+    margin: 0;
     padding: 20px;
 }
 
-#controls {
-    margin-top: 20px;
-    width: 300px;
+/* Nagłówek */
+h2 {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 30px;
+    color: #ffffff;
 }
 
+/* Kontener główny */
+#controls {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    width: 350px;
+    margin-bottom: 20px;
+}
+
+/* Etykiety */
 label {
     display: block;
-    margin-top: 10px;
+    margin-top: 15px;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+/* Suwaki */
+input[type=range] {
+    width: 100%;
+    margin-top: 5px;
+    accent-color: #4da3ff; /* jasny niebieski */
+}
+
+/* Podgląd */
+#preview {
+    display: block;
+    margin-top: 20px;
+    max-width: 90%;
+    border-radius: 10px;
+    border: 2px solid #4da3ff;
+    box-shadow: 0 0 20px rgba(0, 150, 255, 0.4);
+}
+
+/* Kontener layoutu */
+.wrapper {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+/* Przycisk zapisu (opcjonalnie) */
+button {
+    background: #4da3ff;
+    color: #0a1a33;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+button:hover {
+    background: #72baff;
 }
