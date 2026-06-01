@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GP Image Editor</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Cropper.js -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
+    >
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="top-header">
+        <h1>GP Image Editor</h1>
+        <p class="copyright">
+            Copyright © Grzegorz Pieniak
+        </p>
+    </header>
+
+    <!-- MAIN LAYOUT -->
+    <div class="main-container">
+
+        <!-- LEFT PANEL -->
+        <aside class="left-panel">
+
+            <!-- FILE -->
+            <section class="tool-section">
+                <h2>File (Plik)</h2>
+
+                <input
+                    type="file"
+                    id="imageLoader"
+                    accept="image/*"
+                >
+
+                <button id="saveJpgBtn">
+                    Save JPG (Zapisz JPG)
+                </button>
+
+                <button id="savePngBtn">
+                    Save PNG (Zapisz PNG)
+                </button>
+
+                <button id="saveWebpBtn">
+                    Save WEBP (Zapisz WEBP)
+                </button>
+            </section>
+
+            <!-- BASIC ADJUSTMENTS -->
+            <section class="tool-section">
+                <h2>Basic Adjustments (Podstawowe)</h2>
+
+                <!-- BRIGHTNESS -->
+                <div class="control-group">
+                    <label>
+                        Brightness (Jasność)
+                        <span id="brightnessValue">100</span>
+                    </label>
+
+                    <input
+                        type="range"
+                        id="brightness"
+                        min="0"
+                        max="200"
+                        value="100"
+                    >
+
+                    <button class="reset-btn"
+                            data-target="brightness">
+                        Reset
+                    </button>
+                </div>
+
+                <!-- CONTRAST -->
+                <div class="control-group">
+                    <label>
+                        Contrast (Kontrast)
+                        <span id="contrastValue">100</span>
+                    </label>
+
+                    <input
+                        type="range"
+                        id="contrast"
+                        min="0"
+                        max="300"
+                        value="100"
+                    >
+
+                    <button class="reset-btn"
+                            data-target="contrast">
+                        Reset
+                    </button>
+                </div>
+
+                <!-- SATURATION -->
+                <div class="control-group">
+                    <label>
+                        Saturation (Nasycenie)
+                        <span id="saturationValue">100</span>
+                    </label>
+
+                    <input
+                        type="range"
+                        id="saturation"
+                        min="0"
+                        max="300"
+                        value="100"
+                    >
+
+                    <button class="reset-btn"
+                            data-target="saturation">
+                        Reset
+                    </button>
+                </div>
+
+                <!-- SHARPNESS -->
+                <div class="control-group">
+                    <label>
+                        Sharpness (Ostrość)
+                        <span id="sharpnessValue">0</span>
+                    </label>
+
+                    <input
+                        type="range"
+                        id="sharpness"
+                        min="0"
+                        max="10"
+                        value="0"
+                    >
+
+                    <button class="reset-btn"
+                            data-target="sharpness">
+                        Reset
+                    </button>
+                </div>
+
+                <!-- BLUR -->
+                <div class="control-group">
+                    <label>
+                        Blur (Rozmycie)
+                        <span id="blurValue">0</span>
+                    </label>
+
+                    <input
+                        type="range"
+                        id="blur"
+                        min="0"
+                        max="20"
+                        value="0"
+                    >
+
+                    <button class="reset-btn"
+                            data-target="blur">
+                        Reset
+                    </button>
+                </div>
+            </section>
+
+            <!-- TRANSFORM -->
+            <section class="tool-section">
+                <h2>Transform (Transformacje)</h2>
+
+                <button id="rotateLeftBtn">
+                    Rotate Left 90°
+                    (Obrót w lewo)
+                </button>
+
+                <button id="rotateRightBtn">
+                    Rotate Right 90°
+                    (Obrót w prawo)
+                </button>
+
+                <button id="flipHorizontalBtn">
+                    Flip Horizontal
+                    (Odbicie poziome)
+                </button>
+
+                <button id="flipVerticalBtn">
+                    Flip Vertical
+                    (Odbicie pionowe)
+                </button>
+            </section>
+
+            <!-- CROP -->
+            <section class="tool-section">
+                <h2>Crop (Kadrowanie)</h2>
+
+                <button id="startCropBtn">
+                    Start Crop
+                    (Kadruj myszką)
+                </button>
+
+                <button id="applyCropBtn">
+                    Apply Crop
+                    (Zastosuj)
+                </button>
+
+                <button id="cancelCropBtn">
+                    Cancel Crop
+                    (Anuluj)
+                </button>
+
+                <hr>
+
+                <label>X</label>
+                <input type="number"
+                       id="cropX"
+                       value="0">
+
+                <label>Y</label>
+                <input type="number"
+                       id="cropY"
+                       value="0">
+
+                <label>Width (Szerokość)</label>
+                <input type="number"
+                       id="cropWidth"
+                       value="100">
+
+                <label>Height (Wysokość)</label>
+                <input type="number"
+                       id="cropHeight"
+                       value="100">
+
+                <button id="applyManualCropBtn">
+                    Crop by Values
+                    (Kadruj wartościami)
+                </button>
+            </section>
+
+            <!-- HISTORY -->
+            <section class="tool-section">
+                <h2>History (Historia)</h2>
+
+                <button id="undoBtn">
+                    Undo
+                </button>
+
+                <button id="redoBtn">
+                    Redo
+                </button>
+            </section>
+
+            <!-- GLOBAL -->
+            <section class="tool-section">
+                <h2>Global (Globalne)</h2>
+
+                <button id="resetAllBtn">
+                    Reset All
+                    (Resetuj wszystko)
+                </button>
+            </section>
+
+        </aside>
+
+        <!-- RIGHT PANEL -->
+        <main class="right-panel">
+
+            <!-- TOP BAR -->
+            <div class="preview-toolbar">
+
+                <button id="zoomOutBtn">
+                    Zoom -
+                </button>
+
+                <span id="zoomValue">
+                    100%
+                </span>
+
+                <button id="zoomInBtn">
+                    Zoom +
+                </button>
+
+                <button id="fitScreenBtn">
+                    Fit Screen
+                    (Dopasuj)
+                </button>
+
+            </div>
+
+            <!-- IMAGE AREA -->
+            <div class="preview-container">
+
+                <img
+                    id="previewImage"
+                    alt="Preview"
+                >
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- Cropper.js -->
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js">
+    </script>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
