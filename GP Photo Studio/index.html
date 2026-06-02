@@ -6,8 +6,6 @@
     <title>GP Image Editor</title>
 
     <link rel="stylesheet" href="style.css" />
-
-    <!-- Cropper.js -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
@@ -15,188 +13,186 @@
   </head>
 
   <body>
-    <!-- HEADER -->
     <header class="top-header">
       <h1>GP Image Editor</h1>
       <p class="copyright">Copyright © Grzegorz Pieniak</p>
     </header>
 
-    <!-- MAIN LAYOUT -->
     <div class="main-container">
-      <!-- LEFT PANEL -->
       <aside class="left-panel">
-        <!-- FILE -->
         <section class="tool-section">
           <h2>File (Plik)</h2>
-
           <input type="file" id="imageLoader" accept="image/*" />
-
           <button id="saveJpgBtn">Save JPG (Zapisz JPG)</button>
-
           <button id="savePngBtn">Save PNG (Zapisz PNG)</button>
-
           <button id="saveWebpBtn">Save WEBP (Zapisz WEBP)</button>
+          <button id="saveTiffBtn">Save TIFF</button>
+          <button id="saveBmpBtn">Save BMP</button>
+
+          <div class="quality-dialog" id="qualityDialog">
+            <label>Quality (0–100):</label>
+            <input
+              type="range"
+              id="qualitySlider"
+              min="1"
+              max="100"
+              value="90"
+            />
+            <span id="qualityValue">90</span>
+            <button id="qualityOkBtn">OK</button>
+            <button id="qualityCancelBtn">Cancel</button>
+          </div>
         </section>
 
-        <!-- BASIC ADJUSTMENTS -->
         <section class="tool-section">
           <h2>Basic Adjustments (Podstawowe)</h2>
 
-          <!-- BRIGHTNESS -->
           <div class="control-group">
-            <label>
-              Brightness (Jasność)
-              <span id="brightnessValue">100</span>
-            </label>
-
+            <label for="brightness"
+              >Brightness (Jasność) <span id="brightnessValue">100</span></label
+            >
             <input type="range" id="brightness" min="0" max="200" value="100" />
-
             <button class="reset-btn" data-target="brightness">Reset</button>
           </div>
 
-          <!-- CONTRAST -->
           <div class="control-group">
-            <label>
-              Contrast (Kontrast)
-              <span id="contrastValue">100</span>
-            </label>
-
+            <label for="contrast"
+              >Contrast (Kontrast) <span id="contrastValue">100</span></label
+            >
             <input type="range" id="contrast" min="0" max="300" value="100" />
-
             <button class="reset-btn" data-target="contrast">Reset</button>
           </div>
 
-          <!-- SATURATION -->
           <div class="control-group">
-            <label>
-              Saturation (Nasycenie)
-              <span id="saturationValue">100</span>
-            </label>
-
+            <label for="saturation"
+              >Saturation (Nasycenie)
+              <span id="saturationValue">100</span></label
+            >
             <input type="range" id="saturation" min="0" max="300" value="100" />
-
             <button class="reset-btn" data-target="saturation">Reset</button>
           </div>
 
-          <!-- SHARPNESS -->
           <div class="control-group">
-            <label>
-              Sharpness (Ostrość)
-              <span id="sharpnessValue">0</span>
-            </label>
-
+            <label for="sharpness"
+              >Sharpness (Ostrość) <span id="sharpnessValue">0</span></label
+            >
             <input type="range" id="sharpness" min="0" max="10" value="0" />
-
             <button class="reset-btn" data-target="sharpness">Reset</button>
           </div>
 
-          <!-- BLUR -->
           <div class="control-group">
-            <label>
-              Blur (Rozmycie)
-              <span id="blurValue">0</span>
-            </label>
-
+            <label for="blur"
+              >Blur (Rozmycie) <span id="blurValue">0</span></label
+            >
             <input type="range" id="blur" min="0" max="20" value="0" />
-
             <button class="reset-btn" data-target="blur">Reset</button>
           </div>
 
           <div class="control-group">
-            <label>
-              Grayscale (Skala szarości)
-              <span id="grayscaleValue">0</span>
-            </label>
-
+            <label for="grayscale"
+              >Grayscale (Skala szarości)
+              <span id="grayscaleValue">0</span></label
+            >
             <input type="range" id="grayscale" min="0" max="100" value="0" />
-
             <button class="reset-btn" data-target="grayscale">Reset</button>
           </div>
+
+          <div class="control-group">
+            <label for="sepia"
+              >Sepia (Sepia) <span id="sepiaValue">0</span></label
+            >
+            <input type="range" id="sepia" min="0" max="100" value="0" />
+            <button class="reset-btn" data-target="sepia">Reset</button>
+          </div>
+
+          <div class="control-group">
+            <label for="hue"
+              >Hue Rotate (Zmiana barwy) <span id="hueValue">0</span></label
+            >
+            <input type="range" id="hue" min="0" max="360" value="0" />
+            <button class="reset-btn" data-target="hue">Reset</button>
+          </div>
+
+          <div class="control-group">
+            <label for="invert"
+              >Invert (Negatyw) <span id="invertValue">0</span></label
+            >
+            <input type="range" id="invert" min="0" max="100" value="0" />
+            <button class="reset-btn" data-target="invert">Reset</button>
+          </div>
+
+          <div class="control-group">
+            <label for="opacity"
+              >Opacity (Przezroczystość)
+              <span id="opacityValue">100</span></label
+            >
+            <input type="range" id="opacity" min="0" max="100" value="100" />
+            <button class="reset-btn" data-target="opacity">Reset</button>
+          </div>
         </section>
-        <!-- TRANSFORM -->
+
         <section class="tool-section">
           <h2>Transform (Transformacje)</h2>
-
-          <button id="rotateLeftBtn">Rotate Left 90° (Obrót w lewo)</button>
-
-          <button id="rotateRightBtn">Rotate Right 90° (Obrót w prawo)</button>
-
-          <button id="flipHorizontalBtn">
-            Flip Horizontal (Odbicie poziome)
-          </button>
-
-          <button id="flipVerticalBtn">Flip Vertical (Odbicie pionowe)</button>
+          <button id="rotateLeftBtn">Rotate Left 90°</button>
+          <button id="rotateRightBtn">Rotate Right 90°</button>
+          <button id="flipHorizontalBtn">Flip Horizontal</button>
+          <button id="flipVerticalBtn">Flip Vertical</button>
         </section>
 
-        <!-- CROP -->
         <section class="tool-section">
           <h2>Crop (Kadrowanie)</h2>
-
-          <button id="startCropBtn">Start Crop (Kadruj myszką)</button>
-
-          <button id="applyCropBtn">Apply Crop (Zastosuj)</button>
-
-          <button id="cancelCropBtn">Cancel Crop (Anuluj)</button>
+          <button id="startCropBtn">Start Crop</button>
+          <button id="applyCropBtn">Apply Crop</button>
+          <button id="cancelCropBtn">Cancel Crop</button>
 
           <hr />
 
-          <label>X</label>
+          <label for="cropX">X</label>
           <input type="number" id="cropX" value="0" />
 
-          <label>Y</label>
+          <label for="cropY">Y</label>
           <input type="number" id="cropY" value="0" />
 
-          <label>Width (Szerokość)</label>
+          <label for="cropWidth">Width</label>
           <input type="number" id="cropWidth" value="100" />
 
-          <label>Height (Wysokość)</label>
+          <label for="cropHeight">Height</label>
           <input type="number" id="cropHeight" value="100" />
 
-          <button id="applyManualCropBtn">
-            Crop by Values (Kadruj wartościami)
-          </button>
+          <button id="applyManualCropBtn">Crop by Values</button>
         </section>
 
-        <!-- HISTORY -->
         <section class="tool-section">
-          <h2>History (Historia)</h2>
-
+          <h2>History</h2>
           <button id="undoBtn">Undo</button>
-
           <button id="redoBtn">Redo</button>
         </section>
 
-        <!-- GLOBAL -->
         <section class="tool-section">
-          <h2>Global (Globalne)</h2>
-
-          <button id="resetAllBtn">Reset All (Resetuj wszystko)</button>
+          <h2>Global</h2>
+          <button id="resetAllBtn">Reset All</button>
         </section>
       </aside>
 
-      <!-- RIGHT PANEL -->
       <main class="right-panel">
-        <!-- TOP BAR -->
         <div class="preview-toolbar">
+          <button id="zoomResetBtn">Zoom 100%</button>
           <button id="zoomOutBtn">Zoom -</button>
-
-          <span id="zoomValue"> 100% </span>
-
+          <span id="zoomValue">100%</span>
           <button id="zoomInBtn">Zoom +</button>
-
-          <button id="fitScreenBtn">Fit Screen (Dopasuj)</button>
+          <button id="fitScreenBtn">Fit Screen</button>
+          <button id="centerScreenBtn">Center Screen</button>
         </div>
 
-        <!-- IMAGE AREA -->
         <div class="preview-container">
-          <img id="previewImage" alt="Preview" />
+          <div class="preview-inner">
+            <img id="previewImage" alt="Preview" draggable="false" />
+          </div>
         </div>
       </main>
     </div>
 
-    <!-- Cropper.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-
     <script src="script.js"></script>
   </body>
 </html>
