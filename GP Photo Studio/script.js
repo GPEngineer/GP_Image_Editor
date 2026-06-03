@@ -578,7 +578,7 @@ document.getElementById("qualityCancelBtn").addEventListener("click", () => {
   pendingFormat = null;
 });
 
-/* ==========================================================
+/* ===========================================================
    SAVE IMAGE (JPG / PNG / WEBP / TIFF / BMP)
    ========================================================== */
 
