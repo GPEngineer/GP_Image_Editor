@@ -3,203 +3,411 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GP Image Editor</title>
-
+    <title>GP Photo Studio 2.0</title>
     <link rel="stylesheet" href="style.css" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
   </head>
-
   <body>
-    <header class="top-header">
-      <h1>GP Image Editor</h1>
-      <p class="copyright">Copyright © Grzegorz Pieniak</p>
-    </header>
+    <!--
+      LAYOUT:
+      ┌─────────────┬───────────────────────────────────────┐
+      │  APP HEADER │  ZOOM TOOLBAR                         │
+      ├─────────────┼───────────────────────────────────────┤
+      │             │                                       │
+      │  LEFT PANEL │  CANVAS PREVIEW                       │
+      │             │                                       │
+      └─────────────┴───────────────────────────────────────┘
+    -->
 
-    <div class="main-container">
-      <aside class="left-panel">
-        <section class="tool-section">
-          <h2>File (Plik)</h2>
-          <input type="file" id="imageLoader" accept="image/*" />
-          <button id="saveJpgBtn">Save JPG (Zapisz JPG)</button>
-          <button id="savePngBtn">Save PNG (Zapisz PNG)</button>
-          <button id="saveWebpBtn">Save WEBP (Zapisz WEBP)</button>
-          <button id="saveTiffBtn">Save TIFF</button>
-          <button id="saveBmpBtn">Save BMP</button>
-          <div class="quality-dialog" id="qualityDialog">
-            <label>Quality (0–100):</label>
-            <input
-              type="range"
-              id="qualitySlider"
-              min="1"
-              max="100"
-              value="90"
-            />
-            <span id="qualityValue">90</span>
-            <button id="qualityOkBtn">OK</button>
-            <button id="qualityCancelBtn">Cancel</button>
+    <div class="app-layout">
+      <!-- ═══════════════════════════════════════
+           LEFT COLUMN  (header + panel)
+           ═══════════════════════════════════════ -->
+      <aside class="left-column">
+        <!-- HEADER -->
+        <header class="app-header">
+          <div class="app-header__brand">
+            <span class="app-header__icon">◈</span>
+            <div class="app-header__titles">
+              <h1>GP Photo Studio <span class="version">2.0</span></h1>
+              <p class="subtitle">Canvas Edition</p>
+            </div>
           </div>
-        </section>
+          <p class="copyright">&#169; Grzegorz Pieniak</p>
+        </header>
 
-        <section class="tool-section">
-          <h2>Basic Adjustments (Podstawowe)</h2>
+        <!-- SCROLLABLE PANEL -->
+        <div class="left-panel" id="leftPanel">
+          <!-- ── FILE ── -->
+          <details open class="section">
+            <summary><span class="section-icon">📂</span> File</summary>
+            <div class="section-body">
+              <label class="file-upload-label" for="imageLoader">
+                <span class="file-upload-icon">↑</span>
+                <span id="fileNameDisplay">Choose image…</span>
+              </label>
+              <input type="file" id="imageLoader" accept="image/*" hidden />
 
-          <div class="control-group">
-            <label for="brightness"
-              >Brightness (Jasność) <span id="brightnessValue">100</span></label
-            >
-            <input type="range" id="brightness" min="0" max="200" value="100" />
-            <button class="reset-btn" data-target="brightness">Reset</button>
-          </div>
+              <div class="btn-grid">
+                <button class="btn btn--sm" id="saveJpgBtn">JPG</button>
+                <button class="btn btn--sm" id="savePngBtn">PNG</button>
+                <button class="btn btn--sm" id="saveWebpBtn">WEBP</button>
+                <button class="btn btn--sm" id="saveTiffBtn">TIFF</button>
+                <button class="btn btn--sm btn--wide" id="saveBmpBtn">
+                  BMP
+                </button>
+              </div>
 
-          <div class="control-group">
-            <label for="contrast"
-              >Contrast (Kontrast) <span id="contrastValue">100</span></label
-            >
-            <input type="range" id="contrast" min="0" max="300" value="100" />
-            <button class="reset-btn" data-target="contrast">Reset</button>
-          </div>
+              <!-- Quality dialog -->
+              <div class="quality-dialog" id="qualityDialog">
+                <div class="quality-dialog__header">
+                  <span>Export Quality</span>
+                  <span id="qualityValue" class="quality-dialog__val">90</span>
+                </div>
+                <input
+                  type="range"
+                  id="qualitySlider"
+                  min="1"
+                  max="100"
+                  value="90"
+                />
+                <div class="quality-dialog__actions">
+                  <button class="btn btn--sm btn--ghost" id="qualityCancelBtn">
+                    Cancel
+                  </button>
+                  <button class="btn btn--sm" id="qualityOkBtn">Export</button>
+                </div>
+              </div>
+            </div>
+          </details>
 
-          <div class="control-group">
-            <label for="saturation"
-              >Saturation (Nasycenie)
-              <span id="saturationValue">100</span></label
-            >
-            <input type="range" id="saturation" min="0" max="300" value="100" />
-            <button class="reset-btn" data-target="saturation">Reset</button>
-          </div>
+          <!-- ── BASIC ADJUSTMENTS ── -->
+          <details open class="section">
+            <summary>
+              <span class="section-icon">🎨</span> Basic Adjustments
+            </summary>
+            <div class="section-body">
+              <div class="control" data-filter="brightness">
+                <div class="control__row">
+                  <span class="control__name">Brightness</span>
+                  <span class="control__value" id="brightnessValue">100</span>
+                  <button
+                    class="btn btn--reset reset-btn"
+                    data-target="brightness"
+                  >
+                    ↺
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  id="brightness"
+                  min="0"
+                  max="200"
+                  value="100"
+                />
+              </div>
 
-          <div class="control-group">
-            <label for="sharpness"
-              >Sharpness (Ostrość) <span id="sharpnessValue">0</span></label
-            >
-            <input type="range" id="sharpness" min="0" max="10" value="0" />
-            <button class="reset-btn" data-target="sharpness">Reset</button>
-          </div>
+              <div class="control" data-filter="contrast">
+                <div class="control__row">
+                  <span class="control__name">Contrast</span>
+                  <span class="control__value" id="contrastValue">100</span>
+                  <button
+                    class="btn btn--reset reset-btn"
+                    data-target="contrast"
+                  >
+                    ↺
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  id="contrast"
+                  min="0"
+                  max="300"
+                  value="100"
+                />
+              </div>
 
-          <div class="control-group">
-            <label for="blur"
-              >Blur (Rozmycie) <span id="blurValue">0</span></label
-            >
-            <input type="range" id="blur" min="0" max="20" value="0" />
-            <button class="reset-btn" data-target="blur">Reset</button>
-          </div>
+              <div class="control" data-filter="saturation">
+                <div class="control__row">
+                  <span class="control__name">Saturation</span>
+                  <span class="control__value" id="saturationValue">100</span>
+                  <button
+                    class="btn btn--reset reset-btn"
+                    data-target="saturation"
+                  >
+                    ↺
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  id="saturation"
+                  min="0"
+                  max="300"
+                  value="100"
+                />
+              </div>
 
-          <div class="control-group">
-            <label for="grayscale"
-              >Grayscale (Skala szarości)
-              <span id="grayscaleValue">0</span></label
-            >
-            <input type="range" id="grayscale" min="0" max="100" value="0" />
-            <button class="reset-btn" data-target="grayscale">Reset</button>
-          </div>
+              <div class="control" data-filter="sharpness">
+                <div class="control__row">
+                  <span class="control__name">Sharpness</span>
+                  <span class="control__value" id="sharpnessValue">0</span>
+                  <button
+                    class="btn btn--reset reset-btn"
+                    data-target="sharpness"
+                  >
+                    ↺
+                  </button>
+                </div>
+                <input type="range" id="sharpness" min="0" max="10" value="0" />
+              </div>
 
-          <div class="control-group">
-            <label for="sepia"
-              >Sepia (Sepia) <span id="sepiaValue">0</span></label
-            >
-            <input type="range" id="sepia" min="0" max="100" value="0" />
-            <button class="reset-btn" data-target="sepia">Reset</button>
-          </div>
+              <div class="control" data-filter="blur">
+                <div class="control__row">
+                  <span class="control__name">Blur</span>
+                  <span class="control__value" id="blurValue">0</span>
+                  <button class="btn btn--reset reset-btn" data-target="blur">
+                    ↺
+                  </button>
+                </div>
+                <input type="range" id="blur" min="0" max="20" value="0" />
+              </div>
 
-          <div class="control-group">
-            <label for="hue"
-              >Hue Rotate (Zmiana barwy) <span id="hueValue">0</span></label
-            >
-            <input type="range" id="hue" min="0" max="360" value="0" />
-            <button class="reset-btn" data-target="hue">Reset</button>
-          </div>
+              <div class="control" data-filter="grayscale">
+                <div class="control__row">
+                  <span class="control__name">Grayscale</span>
+                  <span class="control__value" id="grayscaleValue">0</span>
+                  <button
+                    class="btn btn--reset reset-btn"
+                    data-target="grayscale"
+                  >
+                    ↺
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  id="grayscale"
+                  min="0"
+                  max="100"
+                  value="0"
+                />
+              </div>
 
-          <div class="control-group">
-            <label for="invert"
-              >Invert (Negatyw) <span id="invertValue">0</span></label
-            >
-            <input type="range" id="invert" min="0" max="100" value="0" />
-            <button class="reset-btn" data-target="invert">Reset</button>
-          </div>
+              <div class="control" data-filter="sepia">
+                <div class="control__row">
+                  <span class="control__name">Sepia</span>
+                  <span class="control__value" id="sepiaValue">0</span>
+                  <button class="btn btn--reset reset-btn" data-target="sepia">
+                    ↺
+                  </button>
+                </div>
+                <input type="range" id="sepia" min="0" max="100" value="0" />
+              </div>
 
-          <div class="control-group">
-            <label for="opacity"
-              >Opacity (Przezroczystość)
-              <span id="opacityValue">100</span></label
-            >
-            <input type="range" id="opacity" min="0" max="100" value="100" />
-            <button class="reset-btn" data-target="opacity">Reset</button>
-          </div>
-        </section>
+              <div class="control" data-filter="hue">
+                <div class="control__row">
+                  <span class="control__name">Hue Rotate</span>
+                  <span class="control__value" id="hueValue">0</span>
+                  <button class="btn btn--reset reset-btn" data-target="hue">
+                    ↺
+                  </button>
+                </div>
+                <input type="range" id="hue" min="0" max="360" value="0" />
+              </div>
 
-        <section class="tool-section">
-          <h2>Transform (Transformacje)</h2>
-          <button id="rotateLeftBtn">Rotate Left 90°</button>
-          <button id="rotateRightBtn">Rotate Right 90°</button>
-          <button id="flipHorizontalBtn">Flip Horizontal</button>
-          <button id="flipVerticalBtn">Flip Vertical</button>
-        </section>
+              <div class="control" data-filter="invert">
+                <div class="control__row">
+                  <span class="control__name">Invert</span>
+                  <span class="control__value" id="invertValue">0</span>
+                  <button class="btn btn--reset reset-btn" data-target="invert">
+                    ↺
+                  </button>
+                </div>
+                <input type="range" id="invert" min="0" max="100" value="0" />
+              </div>
 
-        <section class="tool-section">
-          <h2>Crop (Kadrowanie)</h2>
-          <button id="startCropBtn">Start Crop</button>
-          <button id="applyCropBtn">Apply Crop</button>
-          <button id="cancelCropBtn">Cancel Crop</button>
+              <div class="control" data-filter="opacity">
+                <div class="control__row">
+                  <span class="control__name">Opacity</span>
+                  <span class="control__value" id="opacityValue">100</span>
+                  <button
+                    class="btn btn--reset reset-btn"
+                    data-target="opacity"
+                  >
+                    ↺
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  id="opacity"
+                  min="0"
+                  max="100"
+                  value="100"
+                />
+              </div>
+            </div>
+          </details>
 
-          <hr />
+          <!-- ── TRANSFORM ── -->
+          <details open class="section">
+            <summary><span class="section-icon">🔄</span> Transform</summary>
+            <div class="section-body">
+              <div class="btn-grid btn-grid--2">
+                <button class="btn btn--sm" id="rotateLeftBtn">↺ 90°</button>
+                <button class="btn btn--sm" id="rotateRightBtn">↻ 90°</button>
+                <button class="btn btn--sm" id="flipHorizontalBtn">
+                  ⇆ Flip H
+                </button>
+                <button class="btn btn--sm" id="flipVerticalBtn">
+                  ⇅ Flip V
+                </button>
+              </div>
+            </div>
+          </details>
 
-          <label for="cropX">X</label>
-          <input type="number" id="cropX" value="0" />
+          <!-- ── CROP ── -->
+          <details class="section">
+            <summary><span class="section-icon">✂</span> Crop</summary>
+            <div class="section-body">
+              <div
+                class="info-note"
+                id="cropUnsavedWarning"
+                style="display: none"
+              >
+                ⚠ Save your changes before cropping!
+              </div>
+              <div class="btn-grid btn-grid--3">
+                <button class="btn btn--sm" id="startCropBtn">Start</button>
+                <button class="btn btn--sm btn--accent" id="applyCropBtn">
+                  Apply
+                </button>
+                <button class="btn btn--sm btn--ghost" id="cancelCropBtn">
+                  Cancel
+                </button>
+              </div>
+              <div class="crop-fields">
+                <div class="crop-field">
+                  <label>X</label>
+                  <input type="number" id="cropX" value="0" />
+                </div>
+                <div class="crop-field">
+                  <label>Y</label>
+                  <input type="number" id="cropY" value="0" />
+                </div>
+                <div class="crop-field">
+                  <label>W</label>
+                  <input type="number" id="cropWidth" value="100" />
+                </div>
+                <div class="crop-field">
+                  <label>H</label>
+                  <input type="number" id="cropHeight" value="100" />
+                </div>
+              </div>
+              <button class="btn btn--sm btn--full" id="applyManualCropBtn">
+                Apply by Values
+              </button>
+            </div>
+          </details>
 
-          <label for="cropY">Y</label>
-          <input type="number" id="cropY" value="0" />
+          <!-- ── HISTORY ── -->
+          <details class="section">
+            <summary><span class="section-icon">🕒</span> History</summary>
+            <div class="section-body">
+              <div class="btn-grid btn-grid--2">
+                <button class="btn btn--sm" id="undoBtn">← Undo</button>
+                <button class="btn btn--sm" id="redoBtn">Redo →</button>
+              </div>
+            </div>
+          </details>
 
-          <label for="cropWidth">Width</label>
-          <input type="number" id="cropWidth" value="100" />
-
-          <label for="cropHeight">Height</label>
-          <input type="number" id="cropHeight" value="100" />
-
-          <button id="applyManualCropBtn">Crop by Values</button>
-        </section>
-
-        <section class="tool-section">
-          <h2>History</h2>
-          <button id="undoBtn">Undo</button>
-          <button id="redoBtn">Redo</button>
-        </section>
-
-        <section class="tool-section">
-          <h2>Global</h2>
-          <button id="resetAllBtn">Reset All</button>
-        </section>
+          <!-- ── GLOBAL ── -->
+          <details class="section">
+            <summary><span class="section-icon">⚙</span> Global</summary>
+            <div class="section-body">
+              <button
+                class="btn btn--sm btn--danger btn--full"
+                id="resetAllBtn"
+              >
+                ⟳ Reset All
+              </button>
+            </div>
+          </details>
+        </div>
+        <!-- /left-panel -->
       </aside>
 
-      <main class="right-panel">
-        <div class="preview-toolbar">
-          <button id="zoomResetBtn">Zoom 100%</button>
-          <button id="zoomOutBtn">Zoom -</button>
-          <span id="zoomValue">100%</span>
-          <button id="zoomInBtn">Zoom +</button>
-          <button id="fitScreenBtn">Fit Screen</button>
-          <button id="centerScreenBtn">Center Screen</button>
+      <!-- ═══════════════════════════════════════
+           RIGHT COLUMN  (toolbar + canvas)
+           ═══════════════════════════════════════ -->
+      <main class="workspace">
+        <!-- ZOOM TOOLBAR -->
+        <div class="toolbar">
+          <div class="toolbar__zoom">
+            <button class="btn btn--tool" id="zoomOutBtn" title="Zoom Out">
+              −
+            </button>
+            <span id="zoomValue" class="toolbar__zoom-val">100%</span>
+            <button class="btn btn--tool" id="zoomInBtn" title="Zoom In">
+              +
+            </button>
+          </div>
+          <div class="toolbar__divider"></div>
+          <button class="btn btn--tool" id="fitScreenBtn" title="Fit to Screen">
+            Fit
+          </button>
+          <button class="btn btn--tool" id="zoomResetBtn" title="Original Size">
+            1:1
+          </button>
+          <button class="btn btn--tool" id="centerScreenBtn" title="Center">
+            Center
+          </button>
+
+          <!-- image info -->
+          <div class="toolbar__info" id="imageInfo" style="display: none">
+            <span id="imageDimensions"></span>
+          </div>
         </div>
 
-        <div class="preview-container">
-          <div class="preview-inner">
-            <img id="previewImage" alt="Preview" draggable="false" />
+        <!-- CANVAS AREA -->
+        <div class="canvas-wrapper" id="canvasWrapper">
+          <div class="canvas-stage" id="canvasStage">
+            <canvas id="editorCanvas"></canvas>
+          </div>
+
+          <!-- Drop zone hint -->
+          <div class="drop-hint" id="dropHint">
+            <div class="drop-hint__icon">◈</div>
+            <div class="drop-hint__title">GP Photo Studio 2.0</div>
+            <div class="drop-hint__sub">
+              Click <strong>Choose image</strong> or drag &amp; drop a file here
+            </div>
           </div>
         </div>
       </main>
     </div>
+    <!-- /app-layout -->
 
+    <!-- ═══════════════════════════════════════
+         SCRIPTS
+         ═══════════════════════════════════════ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-
     <script src="https://unpkg.com/utif@2.0.1/UTIF.min.js"></script>
-    <script src="piexif.js"></script>
-
-    <!-- Jeśli chcesz zachować modules/exif.js, zostaw go -->
+    <script src="libs/piexif.js"></script>
+    <script src="libs/bmp-js.min.js"></script>
     <script src="modules/exif.js"></script>
-
-    <!-- Usuń stare tiff.js i bmp.js oraz moduły tiff-export/bmp-export jeśli nie używasz ich API -->
-    <script src="script.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/canvas-renderer.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/crop.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/ui.js"></script>
   </body>
 </html>
