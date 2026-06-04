@@ -28,7 +28,6 @@
           <button id="saveWebpBtn">Save WEBP (Zapisz WEBP)</button>
           <button id="saveTiffBtn">Save TIFF</button>
           <button id="saveBmpBtn">Save BMP</button>
-
           <div class="quality-dialog" id="qualityDialog">
             <label>Quality (0–100):</label>
             <input
@@ -193,6 +192,14 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+
+    <script src="https://unpkg.com/utif@2.0.1/UTIF.min.js"></script>
+    <script src="piexif.js"></script>
+
+    <!-- Jeśli chcesz zachować modules/exif.js, zostaw go -->
+    <script src="modules/exif.js"></script>
+
+    <!-- Usuń stare tiff.js i bmp.js oraz moduły tiff-export/bmp-export jeśli nie używasz ich API -->
     <script src="script.js"></script>
   </body>
 </html>

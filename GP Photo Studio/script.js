@@ -1,7 +1,11 @@
 /* ==========================================================
-   GP Image Editor — SCRIPT 3.0 (PART 1/2)
+   GP Image Editor — SCRIPT 3.1 (CLEANED)
+   - single source of truth for rendering: renderCanvasWithFilters
+   - JPG/PNG/WEBP via saveImageWithQuality
+   - TIFF/BMP via saveAsTiff / saveAsBmp
    ========================================================== */
 
+/* STATE */
 let originalImage = null;
 let imageLoaded = false;
 let currentZoom = 100;
@@ -15,7 +19,6 @@ let history = [];
 let historyIndex = -1;
 
 /* DOM ELEMENTS */
-
 const imageLoader = document.getElementById("imageLoader");
 const previewImage = document.getElementById("previewImage");
 
@@ -59,6 +62,12 @@ imageLoader.addEventListener("change", (event) => {
     previewImage.style.display = "inline-block";
 
     imageLoaded = true;
+
+    // reset transforms for new image
+    rotation = 0;
+    flipX = 1;
+    flipY = 1;
+    currentZoom = 100;
 
     applyFilters();
     saveHistory();
@@ -150,10 +159,11 @@ document.querySelectorAll(".reset-btn").forEach((button) => {
       opacity: 100,
     };
 
-    slider.value = defaults[target];
-
-    applyFilters();
-    saveHistory();
+    if (slider && defaults.hasOwnProperty(target)) {
+      slider.value = defaults[target];
+      applyFilters();
+      saveHistory();
+    }
   });
 });
 
@@ -195,15 +205,12 @@ document.getElementById("zoomInBtn").addEventListener("click", () => {
   currentZoom += 10;
   updateZoom();
 });
-/* ==========================================================
-   ZOOM RESET (100%)
-   ========================================================== */
 
 document.getElementById("zoomResetBtn").addEventListener("click", () => {
   if (!imageLoaded) return;
 
   currentZoom = 100;
-  updateZoom(); // ← kluczowa zmiana
+  updateZoom();
 });
 
 document.getElementById("zoomOutBtn").addEventListener("click", () => {
@@ -222,7 +229,7 @@ function updateZoom() {
 }
 
 /* ==========================================================
-   FIT SCREEN — INTELIGENTNE DOPASOWANIE
+   FIT SCREEN
    ========================================================== */
 
 document.getElementById("fitScreenBtn").addEventListener("click", () => {
@@ -231,22 +238,16 @@ document.getElementById("fitScreenBtn").addEventListener("click", () => {
   const container = document.querySelector(".preview-container");
   const img = previewImage;
 
-  // naturalne wymiary obrazka
   const naturalWidth = img.naturalWidth;
   const naturalHeight = img.naturalHeight;
 
-  // dostępny obszar podglądu
-  const containerWidth = container.clientWidth - 60; // odejmujemy padding
+  const containerWidth = container.clientWidth - 60;
   const containerHeight = container.clientHeight - 60;
 
-  // obliczamy skalę dopasowania
   const scaleX = containerWidth / naturalWidth;
   const scaleY = containerHeight / naturalHeight;
 
-  // wybieramy mniejszą skalę (żeby obraz się zmieścił)
   let newZoom = Math.floor(Math.min(scaleX, scaleY) * 100);
-
-  // jeśli obraz jest mniejszy niż kontener → nie skalujemy
   if (newZoom > 100) newZoom = 100;
 
   currentZoom = newZoom;
@@ -276,6 +277,7 @@ function centerImage() {
 document.getElementById("centerScreenBtn").addEventListener("click", () => {
   centerImage();
 });
+
 /* ==========================================================
    HISTORY
    ========================================================== */
@@ -339,10 +341,6 @@ function restoreState(state) {
   };
 }
 
-/* ==========================================================
-   UNDO / REDO
-   ========================================================== */
-
 document.getElementById("undoBtn").addEventListener("click", () => {
   if (historyIndex <= 0) return;
 
@@ -398,7 +396,7 @@ document.getElementById("flipVerticalBtn").addEventListener("click", () => {
 });
 
 /* ==========================================================
-   CROP — START
+   CROP
    ========================================================== */
 
 document.getElementById("startCropBtn").addEventListener("click", () => {
@@ -416,19 +414,11 @@ document.getElementById("startCropBtn").addEventListener("click", () => {
     crop(event) {
       document.getElementById("cropX").value = Math.round(event.detail.x);
       document.getElementById("cropY").value = Math.round(event.detail.y);
-      document.getElementById("cropWidth").value = Math.round(
-        event.detail.width,
-      );
-      document.getElementById("cropHeight").value = Math.round(
-        event.detail.height,
-      );
+      document.getElementById("cropWidth").value = Math.round(event.detail.width);
+      document.getElementById("cropHeight").value = Math.round(event.detail.height);
     },
   });
 });
-
-/* ==========================================================
-   CROP — CANCEL
-   ========================================================== */
 
 document.getElementById("cancelCropBtn").addEventListener("click", () => {
   if (!cropper) return;
@@ -436,10 +426,6 @@ document.getElementById("cancelCropBtn").addEventListener("click", () => {
   cropper.destroy();
   cropper = null;
 });
-
-/* ==========================================================
-   CROP — APPLY
-   ========================================================== */
 
 document.getElementById("applyCropBtn").addEventListener("click", () => {
   if (!cropper) return;
@@ -512,7 +498,7 @@ document.getElementById("applyManualCropBtn").addEventListener("click", () => {
 });
 
 /* ==========================================================
-   DRAG TO PAN (PRZESUWANIE OBRAZU)
+   DRAG TO PAN
    ========================================================== */
 
 let isPanning = false;
@@ -571,6 +557,7 @@ document.getElementById("qualityOkBtn").addEventListener("click", () => {
   const q = qualitySlider.value / 100;
   qualityDialog.style.display = "none";
   saveImageWithQuality(pendingFormat, q);
+  pendingFormat = null;
 });
 
 document.getElementById("qualityCancelBtn").addEventListener("click", () => {
@@ -578,8 +565,49 @@ document.getElementById("qualityCancelBtn").addEventListener("click", () => {
   pendingFormat = null;
 });
 
+/* ==========================================================
+   RENDER CANVAS WITH FILTERS
+   - uses previewImage (already loaded) as source to avoid async issues
+   ========================================================== */
+
+function renderCanvasWithFilters() {
+  if (!imageLoaded) return null;
+
+  const img = previewImage; // already loaded element
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+
+  canvas.width = w;
+  canvas.height = h;
+
+  ctx.filter = `
+    brightness(${brightnessSlider.value}%)
+    contrast(${contrastSlider.value}%)
+    saturate(${saturationSlider.value}%)
+    blur(${blurSlider.value}px)
+    grayscale(${grayscaleSlider.value}%)
+    sepia(${sepiaSlider.value}%)
+    hue-rotate(${hueSlider.value}deg)
+    invert(${invertSlider.value}%)
+    opacity(${opacitySlider.value}%)
+  `;
+
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.scale(flipX, flipY);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
+
+  return canvas;
+}
+
 /* ===========================================================
-   SAVE IMAGE (JPG / PNG / WEBP / TIFF / BMP)
+   SAVE IMAGE (JPG / PNG / WEBP)
    ========================================================== */
 
 function saveImage(format) {
@@ -591,69 +619,162 @@ function saveImage(format) {
     return;
   }
 
+  // PNG or other direct formats (not tiff/bmp)
   saveImageWithQuality(format, 1.0);
 }
 
 function saveImageWithQuality(format, quality) {
-  const img = new Image();
-  img.src = originalImage;
+  const canvas = renderCanvasWithFilters();
+  if (!canvas) return;
 
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+  let mime = "image/png";
+  if (format === "jpg") mime = "image/jpeg";
+  if (format === "webp") mime = "image/webp";
 
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
+  // If piexif is available and originalImage contains EXIF, preserve it for JPG
+  if (format === "jpg" && typeof piexif !== "undefined" && originalImage && originalImage.startsWith("data:image/jpeg")) {
+    try {
+      const jpegDataURL = canvas.toDataURL("image/jpeg", quality);
+      const exifObj = piexif.load(originalImage);
+      const exifBytes = piexif.dump(exifObj);
+      const newDataURL = piexif.insert(exifBytes, jpegDataURL);
 
-    canvas.width = w;
-    canvas.height = h;
+      const link = document.createElement("a");
+      link.download = `image.jpg`;
+      link.href = newDataURL;
+      link.click();
+      return;
+    } catch (e) {
+      console.warn("piexif error or EXIF not present, falling back to normal JPEG save", e);
+      // fallback to normal below
+    }
+  }
 
-    ctx.filter = `
-      brightness(${brightnessSlider.value}%)
-      contrast(${contrastSlider.value}%)
-      saturate(${saturationSlider.value}%)
-      blur(${blurSlider.value}px)
-      grayscale(${grayscaleSlider.value}%)
-      sepia(${sepiaSlider.value}%)
-      hue-rotate(${hueSlider.value}deg)
-      invert(${invertSlider.value}%)
-      opacity(${opacitySlider.value}%)
-    `;
-
-    ctx.save();
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate((rotation * Math.PI) / 180);
-    ctx.scale(flipX, flipY);
-    ctx.drawImage(img, -w / 2, -h / 2, w, h);
-    ctx.restore();
-
-    /* WATERMARK 
-    ctx.font = "48px Poppins";
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.textAlign = "right";
-    ctx.fillText("© Grzegorz Pieniak", w - 40, h - 40);*/
-    
-    let mime = "image/png";
-
-    if (format === "jpg") mime = "image/jpeg";
-    if (format === "webp") mime = "image/webp";
-
-    /* TIFF & BMP fallback */
-    if (format === "tiff") mime = "image/tiff";
-    if (format === "bmp") mime = "image/bmp";
-
-    const link = document.createElement("a");
-    link.download = `image.${format}`;
-    link.href = canvas.toDataURL(mime, quality);
-    link.click();
-  };
+  const link = document.createElement("a");
+  link.download = `image.${format}`;
+  link.href = canvas.toDataURL(mime, quality);
+  link.click();
 }
 
-/* EVENT LISTENERS */
+/* ==========================================================
+   TIFF EXPORT
+   - expects global TIFF.encode or adjust to library API
+   ========================================================== */
+
+function saveAsTiff(canvas) {
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
+  const imageData = ctx.getImageData(0, 0, width, height);
+
+  // If TIFF library is present and exposes encode
+  if (typeof TIFF !== "undefined" && typeof TIFF.encode === "function") {
+    try {
+      // Some tiff libs expect {width,height,data} or similar
+      const tiffBuffer = TIFF.encode({
+        width: width,
+        height: height,
+        data: imageData.data
+      });
+
+      const blob = new Blob([tiffBuffer], { type: "image/tiff" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "image.tiff";
+      link.click();
+      URL.revokeObjectURL(link.href);
+      return;
+    } catch (e) {
+      console.error("TIFF.encode failed", e);
+    }
+  }
+
+  // Fallback: save PNG and warn
+  console.error("TIFF library not found or API mismatch. Please include/adjust tiff.js.");
+  const pngBlob = dataURLToBlob(canvas.toDataURL("image/png"));
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(pngBlob);
+  link.download = "image.png";
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+/* ==========================================================
+   BMP EXPORT
+   - expects global bmp.encode or adjust to library API
+   ========================================================== */
+
+function saveAsBmp(canvas) {
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
+  const imageData = ctx.getImageData(0, 0, width, height);
+
+  if (typeof bmp !== "undefined" && typeof bmp.encode === "function") {
+    try {
+      // bmp.encode usually returns {data: Uint8Array, width, height}
+      const bmpData = bmp.encode({
+        data: imageData.data,
+        width: width,
+        height: height
+      });
+
+      const blob = new Blob([bmpData.data], { type: "image/bmp" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "image.bmp";
+      link.click();
+      URL.revokeObjectURL(link.href);
+      return;
+    } catch (e) {
+      console.error("bmp.encode failed", e);
+    }
+  }
+
+  console.error("BMP library not found or API mismatch. Please include/adjust bmp.js.");
+  const pngBlob = dataURLToBlob(canvas.toDataURL("image/png"));
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(pngBlob);
+  link.download = "image.png";
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+/* ==========================================================
+   HELPERS
+   ========================================================== */
+
+function dataURLToBlob(dataURL) {
+  const parts = dataURL.split(',');
+  const meta = parts[0].match(/:(.*?);/)[1];
+  const binary = atob(parts[1]);
+  const len = binary.length;
+  const u8 = new Uint8Array(len);
+  for (let i = 0; i < len; i++) u8[i] = binary.charCodeAt(i);
+  return new Blob([u8], { type: meta });
+}
+
+/* ==========================================================
+   EVENT LISTENERS FOR SAVE BUTTONS
+   - single set, no duplicates
+   ========================================================== */
 
 document.getElementById("saveJpgBtn").addEventListener("click", () => saveImage("jpg"));
 document.getElementById("savePngBtn").addEventListener("click", () => saveImage("png"));
 document.getElementById("saveWebpBtn").addEventListener("click", () => saveImage("webp"));
-document.getElementById("saveTiffBtn").addEventListener("click", () => saveImage("tiff"));
-document.getElementById("saveBmpBtn").addEventListener("click", () => saveImage("bmp"));
 
+document.getElementById("saveTiffBtn").addEventListener("click", () => {
+  if (!imageLoaded) return;
+  const canvas = renderCanvasWithFilters();
+  saveAsTiff(canvas);
+});
+
+document.getElementById("saveBmpBtn").addEventListener("click", () => {
+  if (!imageLoaded) return;
+  const canvas = renderCanvasWithFilters();
+  saveAsBmp(canvas);
+});
