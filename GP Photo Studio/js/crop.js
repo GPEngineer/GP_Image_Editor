@@ -1,6 +1,6 @@
 /* ==========================================================
    GP Photo Studio 2.0 Canvas Edition
-   crop.js
+   crop.js  v3.0
    ========================================================== */
 
 "use strict";
@@ -8,195 +8,194 @@
 /* ==========================================================
    STATE
    ========================================================== */
-
-let cropper = null;
-let cropCanvas = null;
-let cropImage = null;
+let _cropper     = null;
+let _cropActive  = false;
+let _cropTempImg = null;   // <img> element used by Cropper.js
 
 /* ==========================================================
-   ELEMENTS
+   DOM
    ========================================================== */
-
-const startCropBtn = document.getElementById("startCropBtn");
-const applyCropBtn = document.getElementById("applyCropBtn");
-const cancelCropBtn = document.getElementById("cancelCropBtn");
-const manualCropBtn = document.getElementById("applyManualCropBtn");
+const startCropBtn      = document.getElementById("startCropBtn");
+const applyCropBtn      = document.getElementById("applyCropBtn");
+const cancelCropBtn     = document.getElementById("cancelCropBtn");
+const applyManualBtn    = document.getElementById("applyManualCropBtn");
+const cropXInput        = document.getElementById("cropX");
+const cropYInput        = document.getElementById("cropY");
+const cropWInput        = document.getElementById("cropWidth");
+const cropHInput        = document.getElementById("cropHeight");
 
 /* ==========================================================
    START CROP
+   Renders current canvas into a temp <img>, overlays Cropper.js
    ========================================================== */
+startCropBtn?.addEventListener("click", startCrop);
 
 function startCrop() {
   if (!GP.imageLoaded) {
+    alert("Load an image first.");
     return;
   }
-  destroyCropper();
-  const editorCanvas = document.getElementById("editorCanvas");
-  cropCanvas = document.createElement("canvas");
-  cropCanvas.width = editorCanvas.width;
-  cropCanvas.height = editorCanvas.height;
-  cropCanvas.style.maxWidth = "100%";
-  cropCanvas.style.display = "block";
-  const ctx = cropCanvas.getContext("2d");
-  ctx.drawImage(editorCanvas, 0, 0);
-  cropImage = document.createElement("img");
-  cropImage.src = cropCanvas.toDataURL("image/png");
-  cropImage.style.maxWidth = "100%";
-  const wrapper = document.querySelector(".canvas-wrapper");
-  wrapper.innerHTML = "";
-  wrapper.appendChild(cropImage);
-  cropper = new Cropper(cropImage, {
+  if (_cropActive) return;
+
+  _cropActive = true;
+
+  const canvas = document.getElementById("editorCanvas");
+
+  /* create a temp img from current canvas state */
+  _cropTempImg = document.createElement("img");
+  _cropTempImg.src = canvas.toDataURL("image/png");
+
+  /* position the temp img on top of the canvas */
+  _cropTempImg.style.cssText = `
+    position: absolute;
+    top: 0; left: 0;
+    width: ${canvas.width}px;
+    height: ${canvas.height}px;
+    z-index: 100;
+    transform: scale(${GP.zoom / 100});
+    transform-origin: top left;
+  `;
+
+  const stage = document.getElementById("canvasStage");
+  stage.style.position = "relative";
+  stage.appendChild(_cropTempImg);
+
+  /* hide the real canvas while cropper is active */
+  canvas.style.visibility = "hidden";
+
+  /* init Cropper.js */
+  _cropper = new Cropper(_cropTempImg, {
     viewMode: 1,
     autoCropArea: 0.8,
-    movable: true,
-    zoomable: true,
-    scalable: true,
+    movable: false,
     rotatable: false,
+    scalable: false,
+    zoomable: false,
     crop(event) {
-      updateCropFields(event.detail);
+      /* keep numeric inputs in sync */
+      if (cropXInput) cropXInput.value = Math.round(event.detail.x);
+      if (cropYInput) cropYInput.value = Math.round(event.detail.y);
+      if (cropWInput) cropWInput.value = Math.round(event.detail.width);
+      if (cropHInput) cropHInput.value = Math.round(event.detail.height);
     },
   });
 }
 
 /* ==========================================================
-   UPDATE INPUTS
-   ========================================================== */
-
-function updateCropFields(data) {
-  const x = document.getElementById("cropX");
-  const y = document.getElementById("cropY");
-  const width = document.getElementById("cropWidth");
-  const height = document.getElementById("cropHeight");
-  if (x) {
-    x.value = Math.round(data.x);
-  }
-  if (y) {
-    y.value = Math.round(data.y);
-  }
-  if (width) {
-    width.value = Math.round(data.width);
-  }
-  if (height) {
-    height.value = Math.round(data.height);
-  }
-}
-
-/* ==========================================================
    APPLY CROP
    ========================================================== */
+applyCropBtn?.addEventListener("click", applyCrop);
 
 function applyCrop() {
-  if (!cropper) {
-    return;
-  }
-  const croppedCanvas = cropper.getCroppedCanvas();
-  if (!croppedCanvas) {
-    return;
-  }
-  const img = new Image();
-  img.onload = () => {
-    GP.image = img;
-    GP.imageLoaded = true;
-    destroyCropper();
-    restoreEditorCanvas();
+  if (!_cropActive || !_cropper) return;
+
+  const croppedCanvas = _cropper.getCroppedCanvas();
+  if (!croppedCanvas) { cancelCrop(); return; }
+
+  /* replace the source image with the cropped result */
+  const newImg = new Image();
+  newImg.onload = () => {
+    GP.image        = newImg;
+    GP.imageLoaded  = true;
+    GP.rotation     = 0;
+    GP.flipX        = 1;
+    GP.flipY        = 1;
+
+    const canvas = document.getElementById("editorCanvas");
+    canvas.width  = newImg.naturalWidth;
+    canvas.height = newImg.naturalHeight;
+    canvas.style.visibility = "";
+
+    /* update dimension info */
+    const dimEl = document.getElementById("imageDimensions");
+    if (dimEl) dimEl.textContent = `${newImg.naturalWidth} × ${newImg.naturalHeight} px`;
+
+    _cleanupCropper();
     renderImage();
-    if (typeof saveHistory === "function") {
-      saveHistory();
-    }
+    saveHistory();
   };
-  img.src = croppedCanvas.toDataURL("image/png");
+  newImg.src = croppedCanvas.toDataURL("image/png");
 }
 
 /* ==========================================================
    CANCEL CROP
    ========================================================== */
+cancelCropBtn?.addEventListener("click", cancelCrop);
 
 function cancelCrop() {
-  destroyCropper();
-  restoreEditorCanvas();
-  renderImage();
+  if (!_cropActive) return;
+  const canvas = document.getElementById("editorCanvas");
+  canvas.style.visibility = "";
+  _cleanupCropper();
 }
 
 /* ==========================================================
-   MANUAL CROP
+   MANUAL / NUMERIC CROP
    ========================================================== */
+applyManualBtn?.addEventListener("click", applyManualCrop);
 
 function applyManualCrop() {
-  if (!GP.imageLoaded) {
-    return;
-  }
-  const x = parseInt(document.getElementById("cropX").value, 10);
-  const y = parseInt(document.getElementById("cropY").value, 10);
-  const width = parseInt(document.getElementById("cropWidth").value, 10);
-  const height = parseInt(document.getElementById("cropHeight").value, 10);
-  const sourceCanvas = document.getElementById("editorCanvas");
-  const tempCanvas = document.createElement("canvas");
+  if (!GP.imageLoaded) return;
 
-  if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height)) {
-    return;
-  }
-  if (width <= 0 || height <= 0) {
-    return;
-  }
+  const x = parseInt(cropXInput?.value) || 0;
+  const y = parseInt(cropYInput?.value) || 0;
+  const w = parseInt(cropWInput?.value) || 100;
+  const h = parseInt(cropHInput?.value) || 100;
 
-  tempCanvas.width = width;
-  tempCanvas.height = height;
-  const ctx = tempCanvas.getContext("2d");
+  const src = document.getElementById("editorCanvas");
 
-const safeX = Math.max(0, Math.min(x, sourceCanvas.width - 1));
-const safeY = Math.max(0, Math.min(y,sourceCanvas.height - 1));
-const safeWidth = Math.min(width,sourceCanvas.width - safeX);
-const safeHeight = Math.min(height,sourceCanvas.height - safeY);
+  /* clamp to canvas size */
+  const cx = Math.max(0, Math.min(x, src.width  - 1));
+  const cy = Math.max(0, Math.min(y, src.height - 1));
+  const cw = Math.max(1, Math.min(w, src.width  - cx));
+  const ch = Math.max(1, Math.min(h, src.height - cy));
 
-  ctx.drawImage(sourceCanvas, x, y, width, height, 0, 0, width, height);
-  const img = new Image();
-  img.onload = () => {
-    GP.image = img;
-    GP.imageLoaded = true;
+  /* extract region */
+  const tmp  = document.createElement("canvas");
+  tmp.width  = cw;
+  tmp.height = ch;
+  tmp.getContext("2d").drawImage(src, cx, cy, cw, ch, 0, 0, cw, ch);
+
+  const newImg = new Image();
+  newImg.onload = () => {
+    GP.image        = newImg;
+    GP.imageLoaded  = true;
+    GP.rotation     = 0;
+    GP.flipX        = 1;
+    GP.flipY        = 1;
+
+    const canvas = document.getElementById("editorCanvas");
+    canvas.width  = cw;
+    canvas.height = ch;
+
+    const dimEl = document.getElementById("imageDimensions");
+    if (dimEl) dimEl.textContent = `${cw} × ${ch} px`;
+
     renderImage();
-    if (typeof saveHistory === "function") {
-      saveHistory();
-    }
+    saveHistory();
   };
-  img.src = tempCanvas.toDataURL("image/png");
+  newImg.src = tmp.toDataURL("image/png");
 }
 
 /* ==========================================================
-   DESTROY CROPPER
+   INTERNAL CLEANUP
    ========================================================== */
-
-function destroyCropper() {
-  if (!cropper) {
-    return;
+function _cleanupCropper() {
+  if (_cropper) {
+    _cropper.destroy();
+    _cropper = null;
   }
-  cropper.destroy();
-  cropper = null;
+  if (_cropTempImg && _cropTempImg.parentNode) {
+    _cropTempImg.parentNode.removeChild(_cropTempImg);
+    _cropTempImg = null;
+  }
+  _cropActive = false;
 }
 
 /* ==========================================================
-   RESTORE CANVAS
+   PUBLIC
    ========================================================== */
-
-function restoreEditorCanvas() {
-  const wrapper = document.querySelector(".canvas-wrapper");
-  wrapper.innerHTML = "";
-  const canvas = document.createElement("canvas");
-  wrapper.appendChild(canvas);
-}
-
-/* ==========================================================
-   BUTTON EVENTS
-   ========================================================== */
-
-startCropBtn?.addEventListener("click", startCrop);
-applyCropBtn?.addEventListener("click", applyCrop);
-cancelCropBtn?.addEventListener("click", cancelCrop);
-manualCropBtn?.addEventListener("click", applyManualCrop);
-
-/* ==========================================================
-   PUBLIC API
-   ========================================================== */
-
-window.startCrop = startCrop;
-window.applyCrop = applyCrop;
-window.cancelCrop = cancelCrop;
+window.startCrop       = startCrop;
+window.applyCrop       = applyCrop;
+window.cancelCrop      = cancelCrop;
+window.applyManualCrop = applyManualCrop;
