@@ -95,6 +95,7 @@ body {
   border-right: 1px solid var(--border);
   overflow: hidden;
   z-index: 10;
+  height: 100vh;
 }
 
 /* ==========================================================
@@ -158,7 +159,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 10px 10px 20px;
+  padding: 10px;
   scrollbar-width: thin;
   scrollbar-color: var(--border-light) transparent;
 }
@@ -723,4 +724,23 @@ button:active,
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
+}
+/* ==========================================================
+   FIXED FOOTER
+   ========================================================== */
+.app-footer {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  background: var(--bg-header);
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.footer-copyright {
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.footer-security {
+  color: var(--text-muted);
+  font-size: 10px;
 }
