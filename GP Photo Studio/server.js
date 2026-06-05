@@ -1,11 +1,46 @@
 const express = require("express");
 const path = require("path");
+const { exec } = require("child_process");
+const net = require("net");
 
 const app = express();
 
-app.use(express.static(__dirname));
+function findFreePort(startPort = 8000) {
+    return new Promise((resolve) => {
+        const server = net.createServer();
 
-app.listen(8000, () => {
-  console.log("GP Photo Studio running on http://localhost:8000");
-  require("child_process").exec("start http://localhost:8000");
-});
+        server.listen(startPort, () => {
+            const port = server.address().port;
+            server.close(() => resolve(port));
+        });
+
+        server.on("error", () => {
+            resolve(findFreePort(startPort + 1));
+        });
+    });
+}
+
+(async () => {
+
+    const PORT = await findFreePort(8000);
+
+    const rootDir = process.cwd();
+
+    console.log("Folder aplikacji:");
+    console.log(rootDir);
+
+    app.use(express.static(rootDir));
+
+    app.get("/", (req, res) => {
+        res.sendFile(path.join(rootDir, "index.html"));
+    });
+
+    app.listen(PORT, () => {
+
+        console.log(`Serwer uruchomiony: http://localhost:${PORT}`);
+
+        exec(`start http://localhost:${PORT}`);
+
+    });
+
+})();

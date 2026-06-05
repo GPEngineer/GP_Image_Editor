@@ -1,5 +1,9 @@
 {
+  "name": "gp-photo-studio",
+  "version": "1.0.0",
+  "main": "server.js",
+  "bin": "server.js",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^4.22.2"
   }
 }
