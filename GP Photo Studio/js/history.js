@@ -25,7 +25,20 @@ function createSnapshot() {
   return {
     /* filters & transform */
     filters: JSON.parse(JSON.stringify(GP.filters)),
+
+    sharpenPro: JSON.parse(
+      JSON.stringify(
+        GP.sharpenPro || {
+          amount: 70,
+          radius: 2,
+          threshold: 4,
+          enabled: false,
+        },
+      ),
+    ),
+
     rotation: GP.rotation,
+
     flipX: GP.flipX,
     flipY: GP.flipY,
     zoom: GP.zoom,
@@ -45,7 +58,20 @@ function createSnapshot() {
 function restoreSnapshot(snap) {
   /* restore filters */
   GP.filters = JSON.parse(JSON.stringify(snap.filters));
+
+  GP.sharpenPro = JSON.parse(
+    JSON.stringify(
+      snap.sharpenPro || {
+        amount: 70,
+        radius: 2,
+        threshold: 4,
+        enabled: false,
+      },
+    ),
+  );
+
   GP.rotation = snap.rotation;
+
   GP.flipX = snap.flipX;
   GP.flipY = snap.flipY;
   GP.zoom = snap.zoom;
@@ -57,8 +83,32 @@ function restoreSnapshot(snap) {
     if (slider) slider.value = value;
     if (label) label.textContent = value;
   });
+  const proAmount = document.getElementById("proAmount");
+  const proRadius = document.getElementById("proRadius");
+  const proThreshold = document.getElementById("proThreshold");
+  const proAmountValue = document.getElementById("proAmountValue");
+  const proRadiusValue = document.getElementById("proRadiusValue");
+  const proThresholdValue = document.getElementById("proThresholdValue");
 
+  if (proAmount) {
+    proAmount.value = GP.sharpenPro.amount;
+    proAmountValue.textContent = GP.sharpenPro.amount;
+  }
+
+  if (proRadius) {
+    proRadius.value = GP.sharpenPro.radius;
+    proRadiusValue.textContent = GP.sharpenPro.radius;
+  }
+
+  if (proThreshold) {
+    proThreshold.value = GP.sharpenPro.threshold;
+
+    proThresholdValue.textContent = GP.sharpenPro.threshold;
+  }
+
+  
   document.getElementById("zoomValue").textContent = `${GP.zoom}%`;
+
 
   /* restore image */
   if (snap.imageSrc && snap.imageData) {

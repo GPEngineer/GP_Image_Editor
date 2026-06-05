@@ -47,7 +47,7 @@
         <!-- SCROLLABLE PANEL -->
         <div class="left-panel" id="leftPanel">
           <!-- ── FILE ── -->
-          <details open class="section">
+          <details class="section">
             <summary><span class="section-icon">📂</span> File</summary>
             <div class="section-body">
               <label class="file-upload-label" for="imageLoader">
@@ -61,9 +61,8 @@
                 <button class="btn btn--sm" id="savePngBtn">PNG</button>
                 <button class="btn btn--sm" id="saveWebpBtn">WEBP</button>
                 <button class="btn btn--sm" id="saveTiffBtn">TIFF</button>
-                <button class="btn btn--sm btn--wide" id="saveBmpBtn">
-                  BMP
-                </button>
+                <button class="btn btn--sm" id="saveGifBtn">GIF</button>
+                <button class="btn btn--sm" id="saveBmpBtn">BMP</button>
               </div>
 
               <!-- Quality dialog -->
@@ -90,7 +89,7 @@
           </details>
 
           <!-- ── BASIC ADJUSTMENTS ── -->
-          <details open class="section">
+          <details class="section">
             <summary>
               <span class="section-icon">🎨</span> Basic Adjustments
             </summary>
@@ -255,8 +254,77 @@
             </div>
           </details>
 
+          <details class="section">
+            <summary>
+              <span class="section-icon">🚀</span>
+              Pro Adjustments
+            </summary>
+
+            <div class="section-body">
+              <details class="section">
+                <summary>
+                  <span class="section-icon">⚡</span>
+                  Sharpen Pro
+                </summary>
+
+                <div class="section-body">
+                  <div class="control">
+                    <div class="control__row">
+                      <span class="control__name">Amount</span>
+                      <span class="control__value" id="proAmountValue">70</span>
+                    </div>
+
+                    <input
+                      type="range"
+                      id="proAmount"
+                      min="0"
+                      max="200"
+                      value="70"
+                    />
+                  </div>
+
+                  <div class="control">
+                    <div class="control__row">
+                      <span class="control__name">Radius</span>
+                      <span class="control__value" id="proRadiusValue">2</span>
+                    </div>
+
+                    <input
+                      type="range"
+                      id="proRadius"
+                      min="1"
+                      max="10"
+                      value="2"
+                    />
+                  </div>
+
+                  <div class="control">
+                    <div class="control__row">
+                      <span class="control__name">Threshold</span>
+                      <span class="control__value" id="proThresholdValue"
+                        >4</span
+                      >
+                    </div>
+
+                    <input
+                      type="range"
+                      id="proThreshold"
+                      min="0"
+                      max="50"
+                      value="4"
+                    />
+                  </div>
+
+                  <button class="btn btn--full" id="applySharpenProBtn">
+                    Apply
+                  </button>
+                </div>
+              </details>
+            </div>
+          </details>
+
           <!-- ── TRANSFORM ── -->
-          <details open class="section">
+          <details class="section">
             <summary><span class="section-icon">🔄</span> Transform</summary>
             <div class="section-body">
               <div class="btn-grid btn-grid--2">
@@ -395,16 +463,20 @@
     <!-- /app-layout -->
 
     <!-- ═══════════════════════════════════════
-         SCRIPTS
+         SCRIPTS   
+         <script src="libs/bmp-js.min.js"></script>
+         <script src="https://unpkg.com/utif@2.0.1/UTIF.min.js"></script>
+         <script src="libs/UTIF.min.js"></script>
          ═══════════════════════════════════════ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-    <script src="https://unpkg.com/utif@2.0.1/UTIF.min.js"></script>
     <script src="libs/piexif.js"></script>
-    <script src="libs/bmp-js.min.js"></script>
+    <script src="libs/UTIF.min.js"></script>
+    <script src="libs/gif.js"></script>
     <script src="modules/exif.js"></script>
     <script src="js/app.js"></script>
     <script src="js/filters.js"></script>
     <script src="js/canvas-renderer.js"></script>
+    <script src="js/sharpen-pro.js"></script>
     <script src="js/history.js"></script>
     <script src="js/crop.js"></script>
     <script src="js/export.js"></script>

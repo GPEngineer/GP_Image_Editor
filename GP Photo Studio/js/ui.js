@@ -27,8 +27,12 @@ const FILTER_DEFAULTS = {
 window.addEventListener("DOMContentLoaded", initializeUI);
 
 function initializeUI() {
+  document
+    .querySelectorAll("details")
+    .forEach((d) => d.removeAttribute("open"));
   initSliders();
   initResetButtons();
+  initSharpenProUI();
 }
 
 /* ==========================================================
@@ -91,4 +95,33 @@ function updateAllLabels() {
 /* ==========================================================
    PUBLIC
    ========================================================== */
+function initSharpenProUI() {
+  const amount = document.getElementById("proAmount");
+  const radius = document.getElementById("proRadius");
+  const threshold = document.getElementById("proThreshold");
+  const amountLabel = document.getElementById("proAmountValue");
+  const radiusLabel = document.getElementById("proRadiusValue");
+  const thresholdLabel = document.getElementById("proThresholdValue");
+  const applyBtn = document.getElementById("applySharpenProBtn");
+  if (!applyBtn) return;
+
+  amount?.addEventListener("input", () => {
+    amountLabel.textContent = amount.value;
+  });
+  radius?.addEventListener("input", () => {
+    radiusLabel.textContent = radius.value;
+  });
+  threshold?.addEventListener("input", () => {
+    thresholdLabel.textContent = threshold.value;
+  });
+
+  applyBtn.addEventListener("click", () => {
+    GP.sharpenPro.amount = Number(amount.value);
+    GP.sharpenPro.radius = Number(radius.value);
+    GP.sharpenPro.threshold = Number(threshold.value);
+    GP.sharpenPro.enabled = true;
+    renderImage();
+    if (typeof saveHistory === "function") saveHistory();
+  });
+}
 window.updateAllLabels = updateAllLabels;

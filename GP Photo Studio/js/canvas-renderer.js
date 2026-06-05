@@ -94,13 +94,15 @@ function renderImage() {
   const h = img.naturalHeight;
 
   /* ── canvas dimensions always match the natural image size ── */
-  canvas.width = w;
-  canvas.height = h;
+  const rot = ((GP.rotation % 360) + 360) % 360;
+  const rotated = rot === 90 || rot === 270;
+  canvas.width = rotated ? h : w;
+  canvas.height = rotated ? w : h;
 
-  ctx.clearRect(0, 0, w, h);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   /* draw checkerboard first (visible through transparent areas) */
-  drawCheckerboard(ctx, w, h);
+  drawCheckerboard(ctx, canvas.width, canvas.height);
 
   /* ── apply CSS filters ── */
   ctx.save();
@@ -117,16 +119,31 @@ function renderImage() {
   ].join(" ");
 
   /* ── transform: rotate + flip around centre ── */
-  ctx.translate(w / 2, h / 2);
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+
   ctx.rotate((GP.rotation * Math.PI) / 180);
   ctx.scale(GP.flipX, GP.flipY);
   ctx.drawImage(img, -w / 2, -h / 2, w, h);
-  ctx.restore();
 
   /* ── pixel-level sharpness (post-process) ── */
   if (GP.filters.sharpness > 0) {
     let imgData = ctx.getImageData(0, 0, w, h);
     imgData = applyCanvasSharpness(imgData, GP.filters.sharpness);
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  if (
+    GP.sharpenPro &&
+    GP.sharpenPro.enabled &&
+    typeof applySharpenPro === "function"
+  ) {
+    let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    imgData = applySharpenPro(
+      imgData,
+      GP.sharpenPro.amount,
+      GP.sharpenPro.radius,
+      GP.sharpenPro.threshold,
+    );
     ctx.putImageData(imgData, 0, 0);
   }
 

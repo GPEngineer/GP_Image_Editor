@@ -15,6 +15,14 @@ window.GP = {
   rotation: 0,
   flipX: 1,
   flipY: 1,
+
+  sharpenPro: {
+    amount: 70,
+    radius: 2,
+    threshold: 4,
+    enabled: false,
+  },
+
   filters: {
     brightness: 100,
     contrast: 100,
@@ -275,6 +283,21 @@ function resetAll() {
   GP.flipX = 1;
   GP.flipY = 1;
   GP.zoom = 100;
+
+  GP.sharpenPro = {
+    amount: 70,
+    radius: 2,
+    threshold: 4,
+    enabled: false,
+  };
+
+  GP.sharpenPro = {
+    amount: 70,
+    radius: 2,
+    threshold: 4,
+    enabled: false,
+  };
+
   zoomValueEl.textContent = "100%";
   resetAllSliders();
   renderImage();
@@ -303,6 +326,28 @@ function resetAllSliders() {
     const lbl = document.getElementById(`${id}Value`);
     if (el) el.value = val;
     if (lbl) lbl.textContent = val;
+  }
+
+  const proAmount = document.getElementById("proAmount");
+  const proRadius = document.getElementById("proRadius");
+  const proThreshold = document.getElementById("proThreshold");
+  const proAmountValue = document.getElementById("proAmountValue");
+  const proRadiusValue = document.getElementById("proRadiusValue");
+  const proThresholdValue = document.getElementById("proThresholdValue");
+
+  if (proAmount) {
+    proAmount.value = 70;
+    proAmountValue.textContent = 70;
+  }
+
+  if (proRadius) {
+    proRadius.value = 2;
+    proRadiusValue.textContent = 2;
+  }
+
+  if (proThreshold) {
+    proThreshold.value = 4;
+    proThresholdValue.textContent = 4;
   }
 }
 
