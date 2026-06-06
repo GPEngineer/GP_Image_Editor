@@ -24,38 +24,42 @@
       │             │                                       │
       │  LEFT PANEL │  CANVAS PREVIEW                       │
       │             │                                       │
+      ├─────────────┤                                       │
+      │  APP FOOTER │                                       │
       └─────────────┴───────────────────────────────────────┘
---><!--    
-GP Photo Studio
-│
-├── index.html
-├── style.css
-├── server.js
-├── package-lock.json
-├── package.json
-│
-├── js
-│   ├── ui.js
-│   ├── sharpen-pro.js
-│   ├── history.js
-│   ├── filters.js
-│   ├── crop.js
-│   ├── export.js
-│   ├── app.js
-│   └── canvas-renderer.js
-│
-├── libs
-│   ├── piexif.js
-│   ├── gif.worker.js
-│   ├── gif.js
-│   ├── cropper.min.js
-│   └── bmp-js.min.js
-│
-└── modules
-    └── exif.js
-    └── bmp-export.js
-    └── tiff-export.js
-      -->
+
+      Project structure:
+
+      GP Photo Studio
+      │
+      ├── index.html
+      ├── style.css
+      ├── server.js
+      ├── package-lock.json
+      ├── package.json
+      │
+      ├── js
+      │   ├── ui.js
+      │   ├── sharpen-pro.js
+      │   ├── history.js
+      │   ├── filters.js
+      │   ├── crop.js
+      │   ├── export.js
+      │   ├── app.js
+      │   └── canvas-renderer.js
+      │
+      ├── libs
+      │   ├── piexif.js
+      │   ├── gif.worker.js
+      │   ├── gif.js
+      │   ├── cropper.min.js
+      │   └── bmp-js.min.js
+      │
+      └── modules
+          └── exif.js
+          └── bmp-export.js
+          └── tiff-export.js
+            -->
 
     <div class="app-layout">
       <!-- ═══════════════════════════════════════
@@ -282,7 +286,7 @@ GP Photo Studio
               </div>
             </div>
           </details>
-
+          <!-- ── Pro Adjustments ── -->
           <details class="section">
             <summary>
               <span class="section-icon">🚀</span>
@@ -291,6 +295,8 @@ GP Photo Studio
 
             <div class="section-body">
               <details class="section">
+
+                
                 <summary>
                   <span class="section-icon">⚡</span>
                   Sharpen Pro
