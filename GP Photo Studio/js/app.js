@@ -188,7 +188,7 @@ let _panActive = false;
 let _panStart = { x: 0, y: 0, sl: 0, st: 0 };
 
 canvasWrapper.addEventListener("mousedown", (e) => {
-  if (e.button === 1 || e.button === 0) {
+  if ((e.button === 1) || (e.button === 0 && e.altKey)) {
     _panActive = true;
     _panStart = {
       x: e.clientX,
@@ -283,13 +283,6 @@ function resetAll() {
   GP.flipX = 1;
   GP.flipY = 1;
   GP.zoom = 100;
-
-  GP.sharpenPro = {
-    amount: 70,
-    radius: 2,
-    threshold: 4,
-    enabled: false,
-  };
 
   GP.sharpenPro = {
     amount: 70,
