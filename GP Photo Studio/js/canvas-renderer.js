@@ -53,10 +53,10 @@ function applyCanvasSharpness(imgData, strength) {
    ──────────────────────────────────────────────────────────── */
 function applyVignetteCanvas(ctx, w, h, strength) {
   if (strength <= 0) return;
-  const s = strength / 100;
+  const s = strength / 50;
   const gr = ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.3, w/2,h/2,Math.max(w,h)*0.75);
   gr.addColorStop(0, 'rgba(0,0,0,0)');
-  gr.addColorStop(1, `rgba(0,0,0,${Math.min(s,1)})`);
+  gr.addColorStop(1, `rgba(0,0,0,${Math.min(s,2)})`);
   ctx.save();
   ctx.globalCompositeOperation = 'source-atop';
   ctx.fillStyle = gr;
