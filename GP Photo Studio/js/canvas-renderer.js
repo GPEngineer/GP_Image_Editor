@@ -1,110 +1,90 @@
-/* ==========================================================
-   GP Photo Studio 2.0 Canvas Edition
-   canvas-renderer.js  v3.0
-   ========================================================== */
-
+/* ============================================================
+   GP Photo Studio 2.1 — canvas-renderer.js  v4.0
+   Renderowanie obrazu, filtry CSS, wyostrzanie, winietowanie
+   ============================================================ */
 "use strict";
 
-/* ==========================================================
-   HELPERS
-   ========================================================== */
-function getCanvas() {
-  return document.getElementById("editorCanvas");
-}
-function getContext() {
-  return getCanvas().getContext("2d");
-}
-
-/* ==========================================================
-   CHECKERBOARD  (drawn behind transparent images)
-   ========================================================== */
-function drawCheckerboard(ctx, width, height) {
-  const size = 16;
-  for (let y = 0; y < height; y += size) {
-    for (let x = 0; x < width; x += size) {
-      const even = (Math.floor(x / size) + Math.floor(y / size)) % 2 === 0;
-      ctx.fillStyle = even ? "#2a2a2e" : "#1e1e22";
-      ctx.fillRect(x, y, size, size);
+/* ────────────────────────────────────────────────────────────
+   SZACHOWNICA (tło dla przezroczystości)
+   ──────────────────────────────────────────────────────────── */
+function drawCheckerboard(ctx, w, h) {
+  const sz = 16;
+  for (let y = 0; y < h; y += sz) {
+    for (let x = 0; x < w; x += sz) {
+      ctx.fillStyle = ((Math.floor(x/sz) + Math.floor(y/sz)) % 2 === 0) ? '#282828' : '#1c1c1c';
+      ctx.fillRect(x, y, sz, sz);
     }
   }
 }
 
-/* ==========================================================
-   SHARPNESS CONVOLUTION
-   ========================================================== */
-function applyCanvasSharpness(imageData, strength) {
-  if (strength <= 0) return imageData;
+/* ────────────────────────────────────────────────────────────
+   WYOSTRZANIE (splot na pikselach)
+   ──────────────────────────────────────────────────────────── */
+function applyCanvasSharpness(imgData, strength) {
+  if (strength <= 0) return imgData;
+  const px = imgData.data, w = imgData.width, h = imgData.height;
+  const out = new Uint8ClampedArray(px);
+  const f = strength / 10;
+  const K = [0,-f,0,-f,1+4*f,-f,0,-f,0];
 
-  const pixels = imageData.data;
-  const width = imageData.width;
-  const height = imageData.height;
-  const output = new Uint8ClampedArray(pixels);
-  const factor = strength / 10;
-
-  const kernel = [
-    0,
-    -1 * factor,
-    0,
-    -1 * factor,
-    5 + 4 * factor,
-    -1 * factor,
-    0,
-    -1 * factor,
-    0,
-  ];
-
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      let r = 0,
-        g = 0,
-        b = 0,
-        k = 0;
-      for (let ky = -1; ky <= 1; ky++) {
-        for (let kx = -1; kx <= 1; kx++) {
-          const pos = ((y + ky) * width + (x + kx)) * 4;
-          const weight = kernel[k++];
-          r += pixels[pos] * weight;
-          g += pixels[pos + 1] * weight;
-          b += pixels[pos + 2] * weight;
+  for (let y = 1; y < h-1; y++) {
+    for (let x = 1; x < w-1; x++) {
+      let r=0,g=0,b=0,k=0;
+      for (let ky=-1; ky<=1; ky++) {
+        for (let kx=-1; kx<=1; kx++) {
+          const p = ((y+ky)*w+(x+kx))*4;
+          const wt = K[k++];
+          r += px[p]*wt; g += px[p+1]*wt; b += px[p+2]*wt;
         }
       }
-      const outPos = (y * width + x) * 4;
-      output[outPos] = Math.max(0, Math.min(255, r));
-      output[outPos + 1] = Math.max(0, Math.min(255, g));
-      output[outPos + 2] = Math.max(0, Math.min(255, b));
-      output[outPos + 3] = pixels[outPos + 3]; // preserve alpha
+      const o = (y*w+x)*4;
+      out[o]   = Math.max(0, Math.min(255, r));
+      out[o+1] = Math.max(0, Math.min(255, g));
+      out[o+2] = Math.max(0, Math.min(255, b));
+      out[o+3] = px[o+3];
     }
   }
-
-  imageData.data.set(output);
-  return imageData;
+  imgData.data.set(out);
+  return imgData;
 }
 
-/* ==========================================================
-   MAIN RENDER
-   ========================================================== */
+/* ────────────────────────────────────────────────────────────
+   WINIETOWANIE
+   ──────────────────────────────────────────────────────────── */
+function applyVignetteCanvas(ctx, w, h, strength) {
+  if (strength <= 0) return;
+  const s = strength / 100;
+  const gr = ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.3, w/2,h/2,Math.max(w,h)*0.75);
+  gr.addColorStop(0, 'rgba(0,0,0,0)');
+  gr.addColorStop(1, `rgba(0,0,0,${Math.min(s,1)})`);
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-atop';
+  ctx.fillStyle = gr;
+  ctx.fillRect(0,0,w,h);
+  ctx.restore();
+}
+
+/* ────────────────────────────────────────────────────────────
+   GŁÓWNY RENDER
+   ──────────────────────────────────────────────────────────── */
 function renderImage() {
   if (!GP.imageLoaded) return;
 
-  const canvas = getCanvas();
-  const ctx = getContext();
+  const cv  = document.getElementById('editorCanvas');
+  const ctx = cv.getContext('2d');
   const img = GP.image;
   const zoom = GP.zoom / 100;
-  const w = img.naturalWidth;
-  const h = img.naturalHeight;
+  const iw   = img.naturalWidth;
+  const ih   = img.naturalHeight;
 
-  /* ── canvas dimensions always match the natural image size ── */
-  const rot = ((GP.rotation % 360) + 360) % 360;
+  const rot     = ((GP.rotation % 360) + 360) % 360;
   const rotated = rot === 90 || rot === 270;
-  canvas.width = rotated ? h : w;
-  canvas.height = rotated ? w : h;
+  cv.width  = rotated ? ih : iw;
+  cv.height = rotated ? iw : ih;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0,0,cv.width,cv.height);
+  drawCheckerboard(ctx, cv.width, cv.height);
 
-  /* draw checkerboard first (visible through transparent areas) */
-  drawCheckerboard(ctx, canvas.width, canvas.height);
-
-  /* ── apply CSS filters ── */
   ctx.save();
   ctx.filter = [
     `brightness(${GP.filters.brightness}%)`,
@@ -115,53 +95,43 @@ function renderImage() {
     `sepia(${GP.filters.sepia}%)`,
     `hue-rotate(${GP.filters.hue}deg)`,
     `invert(${GP.filters.invert}%)`,
-    `opacity(${GP.filters.opacity}%)`,
-  ].join(" ");
+    `opacity(${GP.filters.opacity}%)`
+  ].join(' ');
 
-  /* ── transform: rotate + flip around centre ── */
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-
+  ctx.translate(cv.width/2, cv.height/2);
   ctx.rotate((GP.rotation * Math.PI) / 180);
   ctx.scale(GP.flipX, GP.flipY);
-  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.drawImage(img, -iw/2, -ih/2, iw, ih);
+  ctx.restore();
 
-  /* ── pixel-level sharpness (post-process) ── */
+  /* Wyostrzanie pikselowe */
   if (GP.filters.sharpness > 0) {
-    let imgData = ctx.getImageData(0, 0, w, h);
-    imgData = applyCanvasSharpness(imgData, GP.filters.sharpness);
-    ctx.putImageData(imgData, 0, 0);
+    let id = ctx.getImageData(0,0,cv.width,cv.height);
+    ctx.putImageData(applyCanvasSharpness(id, GP.filters.sharpness), 0, 0);
   }
 
-  if (
-    GP.sharpenPro &&
-    GP.sharpenPro.enabled &&
-    typeof applySharpenPro === "function"
-  ) {
-    let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    imgData = applySharpenPro(
-      imgData,
-      GP.sharpenPro.amount,
-      GP.sharpenPro.radius,
-      GP.sharpenPro.threshold,
-    );
-    ctx.putImageData(imgData, 0, 0);
+  /* Sharpen Pro (Unsharp Mask) */
+  if (GP.sharpenPro?.enabled && typeof applySharpenPro === 'function') {
+    let id = ctx.getImageData(0,0,cv.width,cv.height);
+    ctx.putImageData(applySharpenPro(id, GP.sharpenPro.amount, GP.sharpenPro.radius, GP.sharpenPro.threshold), 0, 0);
   }
 
-  /* ── CSS zoom (scales the canvas element visually) ── */
-  canvas.style.transform = `scale(${zoom})`;
-  canvas.style.transformOrigin = "center center";
+  /* Winietowanie */
+  if (GP.vignette?.enabled && GP.vignette.strength > 0) {
+    applyVignetteCanvas(ctx, cv.width, cv.height, GP.vignette.strength);
+  }
+
+  /* CSS zoom (wizualne skalowanie elementu) */
+  cv.style.transform       = `scale(${zoom})`;
+  cv.style.transformOrigin = 'center center';
 }
 
-/* ==========================================================
-   EXPORT  (returns the canvas at its natural resolution,
-             without CSS transform scale)
-   ========================================================== */
+/* ────────────────────────────────────────────────────────────
+   FLAT CANVAS (do eksportu, bez CSS transform)
+   ──────────────────────────────────────────────────────────── */
 function getRenderedCanvas() {
-  return getCanvas();
+  return document.getElementById('editorCanvas');
 }
 
-/* ==========================================================
-   PUBLIC
-   ========================================================== */
-window.renderImage = renderImage;
+window.renderImage       = renderImage;
 window.getRenderedCanvas = getRenderedCanvas;

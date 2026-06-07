@@ -1,21 +1,14 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GP Photo Studio 2.0</title>
-    <link rel="stylesheet" href="style.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GP Photo Studio 2.1 — Canvas Edition</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
     <!--
       LAYOUT:
       ┌─────────────┬───────────────────────────────────────┐
@@ -61,467 +54,421 @@
           └── tiff-export.js
             -->
 
-    <div class="app-layout">
-      <!-- ═══════════════════════════════════════
-           LEFT COLUMN  (header + panel)
-           ═══════════════════════════════════════ -->
-      <aside class="left-column">
-        <!-- HEADER -->
-        <header class="app-header">
-          <div class="app-header__brand">
-            <span class="app-header__icon">◈</span>
-            <div class="app-header__titles">
-              <h1>GP Photo Studio <span class="version">2.0</span></h1>
-              <p class="subtitle">Canvas Edition</p>
-            </div>
-          </div>
-        </header>
+    
 
-        <!-- SCROLLABLE PANEL -->
-        <div class="left-panel" id="leftPanel">
-          <!-- ── FILE ── -->
-          <details class="section">
-            <summary><span class="section-icon">📂</span> File</summary>
-            <div class="section-body">
-              <label class="file-upload-label" for="imageLoader">
-                <span class="file-upload-icon">↑</span>
-                <span id="fileNameDisplay">Choose image…</span>
-              </label>
-              <input type="file" id="imageLoader" accept="image/*" hidden />
 
-              <div class="btn-grid">
-                <button class="btn btn--sm" id="saveJpgBtn">JPG</button>
-                <button class="btn btn--sm" id="savePngBtn">PNG</button>
-                <button class="btn btn--sm" id="saveWebpBtn">WEBP</button>
-                <button class="btn btn--sm" id="saveTiffBtn">TIFF</button>
-                <button class="btn btn--sm" id="saveGifBtn">GIF</button>
-                <button class="btn btn--sm" id="saveBmpBtn">BMP</button>
-              </div>
-
-              <!-- Quality dialog -->
-              <div class="quality-dialog" id="qualityDialog">
-                <div class="quality-dialog__header">
-                  <span>Export Quality</span>
-                  <span id="qualityValue" class="quality-dialog__val">90</span>
-                </div>
-                <input
-                  type="range"
-                  id="qualitySlider"
-                  min="1"
-                  max="100"
-                  value="90"
-                />
-                <div class="quality-dialog__actions">
-                  <button class="btn btn--sm btn--ghost" id="qualityCancelBtn">
-                    Cancel
-                  </button>
-                  <button class="btn btn--sm" id="qualityOkBtn">Export</button>
-                </div>
-              </div>
-            </div>
-          </details>
-
-          <!-- ── BASIC ADJUSTMENTS ── -->
-          <details class="section">
-            <summary>
-              <span class="section-icon">🎨</span> Basic Adjustments
-            </summary>
-            <div class="section-body">
-              <div class="control" data-filter="brightness">
-                <div class="control__row">
-                  <span class="control__name">Brightness</span>
-                  <span class="control__value" id="brightnessValue">100</span>
-                  <button
-                    class="btn btn--reset reset-btn"
-                    data-target="brightness"
-                  >
-                    ↺
-                  </button>
-                </div>
-                <input
-                  type="range"
-                  id="brightness"
-                  min="0"
-                  max="200"
-                  value="100"
-                />
-              </div>
-
-              <div class="control" data-filter="contrast">
-                <div class="control__row">
-                  <span class="control__name">Contrast</span>
-                  <span class="control__value" id="contrastValue">100</span>
-                  <button
-                    class="btn btn--reset reset-btn"
-                    data-target="contrast"
-                  >
-                    ↺
-                  </button>
-                </div>
-                <input
-                  type="range"
-                  id="contrast"
-                  min="0"
-                  max="300"
-                  value="100"
-                />
-              </div>
-
-              <div class="control" data-filter="saturation">
-                <div class="control__row">
-                  <span class="control__name">Saturation</span>
-                  <span class="control__value" id="saturationValue">100</span>
-                  <button
-                    class="btn btn--reset reset-btn"
-                    data-target="saturation"
-                  >
-                    ↺
-                  </button>
-                </div>
-                <input
-                  type="range"
-                  id="saturation"
-                  min="0"
-                  max="300"
-                  value="100"
-                />
-              </div>
-
-              <div class="control" data-filter="sharpness">
-                <div class="control__row">
-                  <span class="control__name">Sharpness</span>
-                  <span class="control__value" id="sharpnessValue">0</span>
-                  <button
-                    class="btn btn--reset reset-btn"
-                    data-target="sharpness"
-                  >
-                    ↺
-                  </button>
-                </div>
-                <input type="range" id="sharpness" min="0" max="10" value="0" />
-              </div>
-
-              <div class="control" data-filter="blur">
-                <div class="control__row">
-                  <span class="control__name">Blur</span>
-                  <span class="control__value" id="blurValue">0</span>
-                  <button class="btn btn--reset reset-btn" data-target="blur">
-                    ↺
-                  </button>
-                </div>
-                <input type="range" id="blur" min="0" max="20" value="0" />
-              </div>
-
-              <div class="control" data-filter="grayscale">
-                <div class="control__row">
-                  <span class="control__name">Grayscale</span>
-                  <span class="control__value" id="grayscaleValue">0</span>
-                  <button
-                    class="btn btn--reset reset-btn"
-                    data-target="grayscale"
-                  >
-                    ↺
-                  </button>
-                </div>
-                <input
-                  type="range"
-                  id="grayscale"
-                  min="0"
-                  max="100"
-                  value="0"
-                />
-              </div>
-
-              <div class="control" data-filter="sepia">
-                <div class="control__row">
-                  <span class="control__name">Sepia</span>
-                  <span class="control__value" id="sepiaValue">0</span>
-                  <button class="btn btn--reset reset-btn" data-target="sepia">
-                    ↺
-                  </button>
-                </div>
-                <input type="range" id="sepia" min="0" max="100" value="0" />
-              </div>
-
-              <div class="control" data-filter="hue">
-                <div class="control__row">
-                  <span class="control__name">Hue Rotate</span>
-                  <span class="control__value" id="hueValue">0</span>
-                  <button class="btn btn--reset reset-btn" data-target="hue">
-                    ↺
-                  </button>
-                </div>
-                <input type="range" id="hue" min="0" max="360" value="0" />
-              </div>
-
-              <div class="control" data-filter="invert">
-                <div class="control__row">
-                  <span class="control__name">Invert</span>
-                  <span class="control__value" id="invertValue">0</span>
-                  <button class="btn btn--reset reset-btn" data-target="invert">
-                    ↺
-                  </button>
-                </div>
-                <input type="range" id="invert" min="0" max="100" value="0" />
-              </div>
-
-              <div class="control" data-filter="opacity">
-                <div class="control__row">
-                  <span class="control__name">Opacity</span>
-                  <span class="control__value" id="opacityValue">100</span>
-                  <button
-                    class="btn btn--reset reset-btn"
-                    data-target="opacity"
-                  >
-                    ↺
-                  </button>
-                </div>
-                <input
-                  type="range"
-                  id="opacity"
-                  min="0"
-                  max="100"
-                  value="100"
-                />
-              </div>
-            </div>
-          </details>
-          <!-- ── Pro Adjustments ── -->
-          <details class="section">
-            <summary>
-              <span class="section-icon">🚀</span>
-              Pro Adjustments
-            </summary>
-
-            <div class="section-body">
-              <details class="section">
-                <summary>
-                  <span class="section-icon">⚡</span>
-                  Sharpen Pro
-                </summary>
-
-                <div class="section-body">
-                  <div class="control">
-                    <div class="control__row">
-                      <span class="control__name">Amount</span>
-                      <span class="control__value" id="proAmountValue">70</span>
-                    </div>
-
-                    <input
-                      type="range"
-                      id="proAmount"
-                      min="0"
-                      max="200"
-                      value="70"
-                    />
-                  </div>
-
-                  <div class="control">
-                    <div class="control__row">
-                      <span class="control__name">Radius</span>
-                      <span class="control__value" id="proRadiusValue">2</span>
-                    </div>
-
-                    <input
-                      type="range"
-                      id="proRadius"
-                      min="1"
-                      max="10"
-                      value="2"
-                    />
-                  </div>
-
-                  <div class="control">
-                    <div class="control__row">
-                      <span class="control__name">Threshold</span>
-                      <span class="control__value" id="proThresholdValue"
-                        >4</span
-                      >
-                    </div>
-
-                    <input
-                      type="range"
-                      id="proThreshold"
-                      min="0"
-                      max="50"
-                      value="4"
-                    />
-                  </div>
-
-                  <button class="btn btn--full" id="applySharpenProBtn">
-                    Apply
-                  </button>
-                </div>
-              </details>
-            </div>
-          </details>
-
-          <!-- ── TRANSFORM ── -->
-          <details class="section">
-            <summary><span class="section-icon">🔄</span> Transform</summary>
-            <div class="section-body">
-              <div class="btn-grid btn-grid--2">
-                <button class="btn btn--sm" id="rotateLeftBtn">↺ 90°</button>
-                <button class="btn btn--sm" id="rotateRightBtn">↻ 90°</button>
-                <button class="btn btn--sm" id="flipHorizontalBtn">
-                  ⇆ Flip H
-                </button>
-                <button class="btn btn--sm" id="flipVerticalBtn">
-                  ⇅ Flip V
-                </button>
-              </div>
-            </div>
-          </details>
-
-          <!-- ── CROP ── -->
-          <details class="section">
-            <summary><span class="section-icon">✂</span> Crop</summary>
-            <div class="section-body">
-              <div
-                class="info-note"
-                id="cropUnsavedWarning"
-                style="display: none"
-              >
-                ⚠ Save your changes before cropping!
-              </div>
-              <div class="btn-grid btn-grid--3">
-                <button class="btn btn--sm" id="startCropBtn">Start</button>
-                <button class="btn btn--sm btn--accent" id="applyCropBtn">
-                  Apply
-                </button>
-                <button class="btn btn--sm btn--ghost" id="cancelCropBtn">
-                  Cancel
-                </button>
-              </div>
-              <div class="crop-fields">
-                <div class="crop-field">
-                  <label>X</label>
-                  <input type="number" id="cropX" value="0" />
-                </div>
-                <div class="crop-field">
-                  <label>Y</label>
-                  <input type="number" id="cropY" value="0" />
-                </div>
-                <div class="crop-field">
-                  <label>W</label>
-                  <input type="number" id="cropWidth" value="100" />
-                </div>
-                <div class="crop-field">
-                  <label>H</label>
-                  <input type="number" id="cropHeight" value="100" />
-                </div>
-              </div>
-              <button class="btn btn--sm btn--full" id="applyManualCropBtn">
-                Apply by Values
-              </button>
-            </div>
-          </details>
-
-          <!-- ── HISTORY ── -->
-          <details class="section">
-            <summary><span class="section-icon">🕒</span> History</summary>
-            <div class="section-body">
-              <div class="btn-grid btn-grid--2">
-                <button class="btn btn--sm" id="undoBtn">← Undo</button>
-                <button class="btn btn--sm" id="redoBtn">Redo →</button>
-              </div>
-            </div>
-          </details>
-
-          <!-- ── GLOBAL ── -->
-          <details class="section">
-            <summary><span class="section-icon">⚙</span> Global</summary>
-            <div class="section-body">
-              <button
-                class="btn btn--sm btn--danger btn--full"
-                id="resetAllBtn"
-              >
-                ⟳ Reset All
-              </button>
-            </div>
-          </details>
-        </div>
-        <!-- /left-panel -->
-
-        <div class="app-footer">
-          <div class="footer-copyright">&#169; Grzegorz Pieniak</div>
-
-          <div class="footer-security">
-            This application runs entirely locally on your computer. <br />No
-            images or data are transmitted to the Internet.
-          </div>
-        </div>
-      </aside>
-
-      <!-- ═══════════════════════════════════════
-           RIGHT COLUMN  (toolbar + canvas)
-           ═══════════════════════════════════════ -->
-      <main class="workspace">
-        <!-- ZOOM TOOLBAR -->
-        <div class="toolbar">
-          <div class="toolbar__zoom">
-            <button class="btn btn--tool" id="zoomOutBtn" title="Zoom Out">
-              −
-            </button>
-            <span id="zoomValue" class="toolbar__zoom-val">100%</span>
-            <button class="btn btn--tool" id="zoomInBtn" title="Zoom In">
-              +
-            </button>
-          </div>
-          <div class="toolbar__divider"></div>
-          <button class="btn btn--tool" id="fitScreenBtn" title="Fit to Screen">
-            Fit
-          </button>
-          <button class="btn btn--tool" id="zoomResetBtn" title="Original Size">
-            1:1
-          </button>
-          <button class="btn btn--tool" id="centerScreenBtn" title="Center">
-            Center
-          </button>
-
-          <!-- image info -->
-          <div class="toolbar__info" id="imageInfo" style="display: none">
-            <span id="imageDimensions"></span>
-          </div>
-        </div>
-
-        <!-- CANVAS AREA -->
-        <div class="canvas-wrapper" id="canvasWrapper">
-          <div class="canvas-stage" id="canvasStage">
-            <canvas id="editorCanvas"></canvas>
-          </div>
-
-          <!-- Drop zone hint -->
-          <div class="drop-hint" id="dropHint">
-            <div class="drop-hint__icon">◈</div>
-            <div class="drop-hint__title">GP Photo Studio 2.0</div>
-            <div class="drop-hint__sub">
-              Click <strong>Choose image</strong> or drag &amp; drop a file here
-            </div>
-          </div>
-        </div>
-      </main>
+<!-- ══════════════════════════════════════════════
+     MODAL: Potwierdzenie akcji
+     ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal-box">
+    <div class="modal-icon" id="confirmIcon">⚠</div>
+    <div class="modal-title" id="confirmTitle">Potwierdzenie</div>
+    <div class="modal-msg"   id="confirmMsg">Czy na pewno?</div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" id="confirmCancel">Anuluj</button>
+      <button class="btn btn--danger" id="confirmOk">OK</button>
     </div>
-    <!-- /app-layout -->
+  </div>
+</div>
 
-    <!-- ═══════════════════════════════════════
-         SCRIPTS   
-         <script src="libs/bmp-js.min.js"></script>
-         <script src="https://unpkg.com/utif@2.0.1/UTIF.min.js"></script>
-         <script src="libs/UTIF.min.js"></script>
-         ═══════════════════════════════════════ -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-    <script src="libs/piexif.js"></script>
-    <script src="libs/UTIF.min.js"></script>
-    <script src="libs/gif.js"></script>
-    <script src="modules/exif.js"></script>
-    <script src="js/app.js"></script>
-    <script src="js/filters.js"></script>
-    <script src="js/canvas-renderer.js"></script>
-    <script src="js/sharpen-pro.js"></script>
-    <script src="js/history.js"></script>
-    <script src="js/crop.js"></script>
-    <script src="js/export.js"></script>
-    <script src="js/ui.js"></script>
-  </body>
+<!-- ══════════════════════════════════════════════
+     TOAST (powiadomienia)
+     ══════════════════════════════════════════════ -->
+<div class="toast" id="gpToast"></div>
+
+<!-- ══════════════════════════════════════════════
+     GŁÓWNY LAYOUT
+     ══════════════════════════════════════════════ -->
+<div class="app-layout">
+
+  <!-- ═══════════ LEWA KOLUMNA ═══════════ -->
+  <aside class="left-column">
+
+    <!-- NAGŁÓWEK -->
+    <header class="app-header">
+      <div class="app-header__brand">
+        <span class="app-header__icon">◈</span>
+        <div class="app-header__titles">
+          <h1>GP Photo Studio <span class="version">2.1</span></h1>
+          <p class="subtitle">Canvas Edition</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- PANEL PRZEWIJALNY -->
+    <div class="left-panel" id="leftPanel">
+
+      <!-- ─── FILE ─── -->
+      <details class="section">
+        <summary><span class="section-icon">📂</span> Plik</summary>
+        <div class="section-body">
+
+          <label class="file-upload-label" id="fileUploadLabel" for="imageLoader">
+            <span class="file-upload-icon">↑</span>
+            <span id="fileNameDisplay">Wybierz obraz…</span>
+          </label>
+          <input type="file" id="imageLoader" accept="image/*" hidden/>
+
+          <button class="btn btn--sm btn--danger btn--full" id="clearImageBtn" style="margin-bottom:10px">
+            🗑 Wyczyść obraz
+          </button>
+
+          <div class="section-sublabel">Zapisz jako</div>
+          <div class="btn-grid btn-grid--3">
+            <button class="btn btn--sm" id="saveJpgBtn">JPG</button>
+            <button class="btn btn--sm" id="savePngBtn">PNG</button>
+            <button class="btn btn--sm" id="saveWebpBtn">WEBP</button>
+            <button class="btn btn--sm" id="saveTiffBtn">TIFF</button>
+            <button class="btn btn--sm" id="saveGifBtn">GIF</button>
+            <button class="btn btn--sm" id="saveBmpBtn">BMP</button>
+          </div>
+
+          <!-- Quality dialog -->
+          <div class="quality-dialog" id="qualityDialog">
+            <div class="quality-dialog__header">
+              <span>Jakość eksportu &nbsp;<strong id="qualityFormatLabel" class="format-badge">JPG</strong></span>
+              <span id="qualityValue" class="quality-dialog__val">90</span>
+            </div>
+            <input type="range" id="qualitySlider" min="1" max="100" value="90"/>
+            <div class="quality-dialog__actions">
+              <button class="btn btn--sm btn--ghost" id="qualityCancelBtn">Anuluj</button>
+              <button class="btn btn--sm btn--accent" id="qualityOkBtn">Eksportuj</button>
+            </div>
+          </div>
+
+        </div>
+      </details>
+
+      <!-- ─── BASIC ADJUSTMENTS ─── -->
+      <details class="section" id="basicSection">
+        <summary><span class="section-icon">🎨</span> Podstawowe korekty</summary>
+        <div class="section-body">
+
+          <div class="control" data-filter="brightness">
+            <div class="control__row">
+              <span class="control__name">Jasność</span>
+              <span class="control__value" id="brightnessValue">100</span>
+              <button class="btn btn--reset reset-btn" data-target="brightness">↺</button>
+            </div>
+            <input type="range" id="brightness" min="0" max="200" value="100"/>
+          </div>
+
+          <div class="control" data-filter="contrast">
+            <div class="control__row">
+              <span class="control__name">Kontrast</span>
+              <span class="control__value" id="contrastValue">100</span>
+              <button class="btn btn--reset reset-btn" data-target="contrast">↺</button>
+            </div>
+            <input type="range" id="contrast" min="0" max="300" value="100"/>
+          </div>
+
+          <div class="control" data-filter="saturation">
+            <div class="control__row">
+              <span class="control__name">Nasycenie</span>
+              <span class="control__value" id="saturationValue">100</span>
+              <button class="btn btn--reset reset-btn" data-target="saturation">↺</button>
+            </div>
+            <input type="range" id="saturation" min="0" max="300" value="100"/>
+          </div>
+
+          <div class="control" data-filter="sharpness">
+            <div class="control__row">
+              <span class="control__name">Ostrość</span>
+              <span class="control__value" id="sharpnessValue">0</span>
+              <button class="btn btn--reset reset-btn" data-target="sharpness">↺</button>
+            </div>
+            <input type="range" id="sharpness" min="0" max="10" value="0"/>
+          </div>
+
+          <div class="control" data-filter="blur">
+            <div class="control__row">
+              <span class="control__name">Rozmycie</span>
+              <span class="control__value" id="blurValue">0</span>
+              <button class="btn btn--reset reset-btn" data-target="blur">↺</button>
+            </div>
+            <input type="range" id="blur" min="0" max="20" value="0"/>
+          </div>
+
+          <div class="control" data-filter="grayscale">
+            <div class="control__row">
+              <span class="control__name">Skala szarości</span>
+              <span class="control__value" id="grayscaleValue">0</span>
+              <button class="btn btn--reset reset-btn" data-target="grayscale">↺</button>
+            </div>
+            <input type="range" id="grayscale" min="0" max="100" value="0"/>
+          </div>
+
+          <div class="control" data-filter="sepia">
+            <div class="control__row">
+              <span class="control__name">Sepia</span>
+              <span class="control__value" id="sepiaValue">0</span>
+              <button class="btn btn--reset reset-btn" data-target="sepia">↺</button>
+            </div>
+            <input type="range" id="sepia" min="0" max="100" value="0"/>
+          </div>
+
+          <div class="control" data-filter="hue">
+            <div class="control__row">
+              <span class="control__name">Odcień (Hue)</span>
+              <span class="control__value" id="hueValue">0</span>
+              <button class="btn btn--reset reset-btn" data-target="hue">↺</button>
+            </div>
+            <input type="range" id="hue" min="0" max="360" value="0"/>
+          </div>
+
+          <div class="control" data-filter="invert">
+            <div class="control__row">
+              <span class="control__name">Inwersja</span>
+              <span class="control__value" id="invertValue">0</span>
+              <button class="btn btn--reset reset-btn" data-target="invert">↺</button>
+            </div>
+            <input type="range" id="invert" min="0" max="100" value="0"/>
+          </div>
+
+          <div class="control" data-filter="opacity">
+            <div class="control__row">
+              <span class="control__name">Przezroczystość</span>
+              <span class="control__value" id="opacityValue">100</span>
+              <button class="btn btn--reset reset-btn" data-target="opacity">↺</button>
+            </div>
+            <input type="range" id="opacity" min="0" max="100" value="100"/>
+          </div>
+
+          <div class="section-actions">
+            <button class="btn btn--sm btn--ghost btn--wide-half" id="basicCancelBtn">✕ Anuluj</button>
+            <button class="btn btn--sm btn--accent btn--wide-half" id="basicApplyBtn">✓ Zastosuj</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- ─── PRO ADJUSTMENTS ─── -->
+      <details class="section">
+        <summary><span class="section-icon">🚀</span> Zaawansowane korekty</summary>
+        <div class="section-body">
+
+          <!-- Sharpen Pro -->
+          <details class="section subsection">
+            <summary><span class="section-icon">⚡</span> Wyostrzanie Pro</summary>
+            <div class="section-body">
+              <div class="control">
+                <div class="control__row">
+                  <span class="control__name">Intensywność</span>
+                  <span class="control__value" id="proAmountValue">70</span>
+                </div>
+                <input type="range" id="proAmount" min="0" max="200" value="70"/>
+              </div>
+              <div class="control">
+                <div class="control__row">
+                  <span class="control__name">Promień</span>
+                  <span class="control__value" id="proRadiusValue">2</span>
+                </div>
+                <input type="range" id="proRadius" min="1" max="10" value="2"/>
+              </div>
+              <div class="control">
+                <div class="control__row">
+                  <span class="control__name">Próg</span>
+                  <span class="control__value" id="proThresholdValue">4</span>
+                </div>
+                <input type="range" id="proThreshold" min="0" max="50" value="4"/>
+              </div>
+              <div class="section-actions">
+                <button class="btn btn--sm btn--ghost btn--wide-half" id="cancelSharpenProBtn">✕ Anuluj</button>
+                <button class="btn btn--sm btn--accent btn--wide-half" id="applySharpenProBtn">✓ Zastosuj</button>
+              </div>
+            </div>
+          </details>
+
+          <!-- Vignette -->
+          <details class="section subsection">
+            <summary><span class="section-icon">🌑</span> Winietowanie</summary>
+            <div class="section-body">
+              <div class="control">
+                <div class="control__row">
+                  <span class="control__name">Siła efektu</span>
+                  <span class="control__value" id="vignetteValue">0</span>
+                </div>
+                <input type="range" id="vignetteStrength" min="0" max="100" value="0"/>
+              </div>
+              <div class="section-actions">
+                <button class="btn btn--sm btn--ghost btn--wide-half" id="cancelVignetteBtn">✕ Anuluj</button>
+                <button class="btn btn--sm btn--accent btn--wide-half" id="applyVignetteBtn">✓ Zastosuj</button>
+              </div>
+            </div>
+          </details>
+
+        </div>
+      </details>
+
+      <!-- ─── TRANSFORM ─── -->
+      <details class="section">
+        <summary><span class="section-icon">🔄</span> Transformacja</summary>
+        <div class="section-body">
+          <div class="btn-grid btn-grid--2">
+            <button class="btn btn--sm" id="rotateLeftBtn">↺ Obróć L</button>
+            <button class="btn btn--sm" id="rotateRightBtn">↻ Obróć P</button>
+            <button class="btn btn--sm" id="flipHorizontalBtn">⇆ Lustro H</button>
+            <button class="btn btn--sm" id="flipVerticalBtn">⇅ Lustro V</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- ─── HISTORIA ─── -->
+      <details class="section" id="historySection">
+        <summary>
+          <span class="section-icon">🕒</span> Historia
+          <span class="history-badge" id="historyCount">0</span>
+        </summary>
+        <div class="section-body">
+          <div class="btn-grid btn-grid--2" style="margin-bottom:8px">
+            <button class="btn btn--sm" id="undoBtn" disabled>← Cofnij</button>
+            <button class="btn btn--sm" id="redoBtn" disabled>Ponów →</button>
+          </div>
+          <div class="history-list" id="historyList">
+            <div class="history-empty">Brak historii</div>
+          </div>
+          <button class="btn btn--sm btn--ghost btn--full" id="clearHistoryBtn" style="margin-top:6px">
+            🗑 Wyczyść historię
+          </button>
+        </div>
+      </details>
+
+      <!-- ─── USTAWIENIA ─── -->
+      <details class="section">
+        <summary><span class="section-icon">⚙</span> Ustawienia</summary>
+        <div class="section-body">
+
+          <div class="setting-row">
+            <span class="setting-label">Pokaż linijki</span>
+            <label class="toggle"><input type="checkbox" id="showRulers"/><span class="toggle-slider"></span></label>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">Jednostka linijki</span>
+            <select id="rulerUnit" class="setting-select">
+              <option value="px">Piksele (px)</option>
+              <option value="mm">Milimetry (mm)</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">DPI (dla mm)</span>
+            <input type="number" id="rulerDpi" value="96" min="72" max="600" class="setting-input"/>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">Krok zoomu (%)</span>
+            <select id="zoomStep" class="setting-select">
+              <option value="10" selected>10%</option>
+              <option value="25">25%</option>
+              <option value="50">50%</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">Auto-centruj przy zoom</span>
+            <label class="toggle"><input type="checkbox" id="autoCenterZoom" checked/><span class="toggle-slider"></span></label>
+          </div>
+
+          <div style="margin-top:10px">
+            <button class="btn btn--sm btn--danger btn--full" id="resetAllBtn">⟳ Resetuj wszystkie korekty</button>
+          </div>
+        </div>
+      </details>
+
+    </div><!-- /left-panel -->
+
+    <!-- STOPKA -->
+    <footer class="app-footer">
+      <div class="footer-copyright">© Grzegorz Pieniak</div>
+      <div class="footer-security">
+        Aplikacja działa wyłącznie lokalnie na Twoim komputerze.<br/>
+        Żadne obrazy ani dane nie są przesyłane do Internetu.
+      </div>
+    </footer>
+
+  </aside><!-- /left-column -->
+
+  <!-- ═══════════ PRAWA KOLUMNA (workspace) ═══════════ -->
+  <main class="workspace">
+
+    <!-- TOOLBAR ZOOM + NARZĘDZIA -->
+    <div class="toolbar" id="mainToolbar">
+
+      <!-- Zoom -->
+      <div class="toolbar__zoom">
+        <button class="btn btn--tool" id="zoomOutBtn" title="Zmniejsz">−</button>
+        <span id="zoomValue" class="toolbar__zoom-val">100%</span>
+        <button class="btn btn--tool" id="zoomInBtn" title="Powiększ">+</button>
+      </div>
+
+      <div class="toolbar__divider"></div>
+      <button class="btn btn--tool" id="fitScreenBtn"    title="Dopasuj do ekranu">Fit</button>
+      <button class="btn btn--tool" id="zoomResetBtn"    title="Oryginalny rozmiar 1:1">1:1</button>
+      <button class="btn btn--tool" id="centerScreenBtn" title="Wyśrodkuj">Centruj</button>
+
+      <div class="toolbar__divider"></div>
+
+      <!-- COPY — wyróżniony -->
+      <button class="btn btn--tool btn--copy" id="copyImageBtn" title="Kopiuj obraz do schowka">
+        📋 Kopiuj
+      </button>
+
+      <div class="toolbar__divider"></div>
+
+      <!-- CROP -->
+      <button class="btn btn--tool" id="cropToolBtn" title="Kadruj">✂ Kadruj</button>
+      <div id="cropToolbar" class="crop-toolbar" style="display:none">
+        <button class="btn btn--sm btn--accent" id="applyCropToolBtn">✓ Zastosuj</button>
+        <button class="btn btn--sm btn--ghost"  id="cancelCropToolBtn">✕ Anuluj</button>
+      </div>
+
+      <!-- Wymiary -->
+      <div class="toolbar__info" id="imageInfo" style="display:none">
+        <span id="imageDimensions"></span>
+      </div>
+    </div>
+
+    <!-- LINIJKI -->
+    <div class="ruler-wrap" id="rulerWrap" style="display:none">
+      <div class="ruler-corner"></div>
+      <canvas id="rulerX" class="ruler ruler--x"></canvas>
+      <canvas id="rulerY" class="ruler ruler--y" style="display:none"></canvas>
+    </div>
+
+    <!-- OBSZAR PODGLĄDU -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <div class="canvas-stage" id="canvasStage">
+        <canvas id="editorCanvas"></canvas>
+      </div>
+
+      <!-- Wskazówka "przeciągnij plik" -->
+      <div class="drop-hint" id="dropHint">
+        <div class="drop-hint__icon">◈</div>
+        <div class="drop-hint__title">GP Photo Studio 2.1</div>
+        <div class="drop-hint__sub">
+          Kliknij <strong>Wybierz obraz</strong> lub przeciągnij plik tutaj
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+</div><!-- /app-layout -->
+
+<!-- ══════════════════════════════════════════════
+     SKRYPTY  (kolejność ważna!)
+     ══════════════════════════════════════════════ -->
+<script src="js/app.js"></script>
+<script src="js/canvas-renderer.js"></script>
+<script src="js/sharpen-pro.js"></script>
+<script src="js/filters.js"></script>
+<script src="js/history.js"></script>
+<script src="js/crop.js"></script>
+<script src="js/export.js"></script>
+<script src="js/rulers.js"></script>
+<script src="js/clipboard.js"></script>
+<script src="js/ui.js"></script>
+
+</body>
 </html>

@@ -1,142 +1,222 @@
-/* ==========================================================
-   GP Photo Studio 2.0 Canvas Edition
-   app.js  v3.0
-   ========================================================== */
-
+/* ============================================================
+   GP Photo Studio 2.1 — app.js  v4.0
+   Stan globalny, ładowanie obrazu, zoom, pan, transform
+   ============================================================ */
 "use strict";
 
-/* ==========================================================
-   GLOBAL STATE
-   ========================================================== */
+/* ────────────────────────────────────────────────────────────
+   STAN GLOBALNY
+   ──────────────────────────────────────────────────────────── */
 window.GP = {
-  image: null,
-  imageLoaded: false,
-  zoom: 100,
-  rotation: 0,
-  flipX: 1,
-  flipY: 1,
+  image       : null,
+  imageLoaded : false,
+  zoom        : 100,
+  rotation    : 0,
+  flipX       : 1,
+  flipY       : 1,
+  fileName    : '',
 
-  sharpenPro: {
-    amount: 70,
-    radius: 2,
-    threshold: 4,
-    enabled: false,
+  sharpenPro : { amount:70, radius:2, threshold:4, enabled:false },
+  vignette   : { strength:0, enabled:false },
+
+  filters : {
+    brightness:100, contrast:100, saturation:100,
+    sharpness:0, blur:0, grayscale:0,
+    sepia:0, hue:0, invert:0, opacity:100
   },
 
-  filters: {
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    sharpness: 0,
-    blur: 0,
-    grayscale: 0,
-    sepia: 0,
-    hue: 0,
-    invert: 0,
-    opacity: 100,
-  },
+  settings : {
+    showRulers    : false,
+    rulerUnit     : 'px',
+    rulerDpi      : 96,
+    zoomStep      : 10,
+    autoCenterZoom: true
+  }
 };
 
-/* ==========================================================
-   DOM REFS
-   ========================================================== */
-const imageLoader = document.getElementById("imageLoader");
-const canvas = document.getElementById("editorCanvas");
-const zoomValueEl = document.getElementById("zoomValue");
-const dropHint = document.getElementById("dropHint");
-const canvasWrapper = document.getElementById("canvasWrapper");
-const imageInfo = document.getElementById("imageInfo");
-const imageDimEl = document.getElementById("imageDimensions");
-const fileNameDisp = document.getElementById("fileNameDisplay");
+/* ────────────────────────────────────────────────────────────
+   REFERENCJE DOM
+   ──────────────────────────────────────────────────────────── */
+const imageLoader   = document.getElementById('imageLoader');
+const canvas        = document.getElementById('editorCanvas');
+const zoomValueEl   = document.getElementById('zoomValue');
+const dropHint      = document.getElementById('dropHint');
+const canvasWrapper = document.getElementById('canvasWrapper');
+const imageInfo     = document.getElementById('imageInfo');
+const imageDimEl    = document.getElementById('imageDimensions');
+const fileNameDisp  = document.getElementById('fileNameDisplay');
 
-/* ==========================================================
-   LOAD IMAGE — from <input>
-   ========================================================== */
-imageLoader.addEventListener("change", (e) => loadImageFile(e.target.files[0]));
+/* ────────────────────────────────────────────────────────────
+   TOAST
+   ──────────────────────────────────────────────────────────── */
+function showToast(msg, duration = 2800) {
+  const t = document.getElementById('gpToast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+window.showToast = showToast;
 
+/* ────────────────────────────────────────────────────────────
+   MODAL POTWIERDZENIA
+   ──────────────────────────────────────────────────────────── */
+function showConfirm(title, msg, onOk, icon='⚠') {
+  const overlay = document.getElementById('confirmOverlay');
+  document.getElementById('confirmIcon').textContent  = icon;
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  overlay.classList.add('show');
+
+  const okBtn  = document.getElementById('confirmOk');
+  const canBtn = document.getElementById('confirmCancel');
+
+  function cleanup() {
+    overlay.classList.remove('show');
+    okBtn.removeEventListener('click', handleOk);
+    canBtn.removeEventListener('click', handleCancel);
+    overlay.removeEventListener('click', handleBg);
+  }
+  function handleOk()     { cleanup(); onOk(); }
+  function handleCancel() { cleanup(); }
+  function handleBg(e)    { if (e.target === overlay) cleanup(); }
+
+  okBtn.addEventListener('click', handleOk);
+  canBtn.addEventListener('click', handleCancel);
+  overlay.addEventListener('click', handleBg);
+}
+window.showConfirm = showConfirm;
+
+/* ────────────────────────────────────────────────────────────
+   OSTRZEŻENIE PRZY F5 / ZAMKNIĘCIU
+   ──────────────────────────────────────────────────────────── */
+window.addEventListener('beforeunload', e => {
+  if (!GP.imageLoaded) return;
+  e.preventDefault();
+  e.returnValue = 'Masz niezapisaną pracę. Czy na pewno chcesz opuścić stronę?';
+  return e.returnValue;
+});
+
+/* ────────────────────────────────────────────────────────────
+   WYBÓR PLIKU — naprawa błędu podwójnego otwierania okna
+   ──────────────────────────────────────────────────────────── */
+document.getElementById('fileUploadLabel').addEventListener('click', e => {
+  e.preventDefault();
+  imageLoader.value = '';   // reset żeby ten sam plik dał się załadować ponownie
+  imageLoader.click();
+});
+
+imageLoader.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) loadImageFile(file);
+  // Reset wartości żeby event 'change' odpalił się nawet dla tego samego pliku
+  imageLoader.value = '';
+});
+
+/* ────────────────────────────────────────────────────────────
+   ŁADOWANIE OBRAZU
+   ──────────────────────────────────────────────────────────── */
 function loadImageFile(file) {
   if (!file) return;
+  GP.fileName = file.name.replace(/\.[^.]+$/, '');
   fileNameDisp.textContent = file.name;
+
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = ev => {
     const img = new Image();
     img.onload = () => {
-      GP.image = img;
+      GP.image       = img;
       GP.imageLoaded = true;
-      GP.zoom = 100;
-      GP.rotation = 0;
-      GP.flipX = 1;
-      GP.flipY = 1;
+      GP.zoom        = 100;
+      GP.rotation    = 0;
+      GP.flipX       = 1;
+      GP.flipY       = 1;
 
-      /* update info bar */
       imageDimEl.textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
-      imageInfo.style.display = "";
+      imageInfo.style.display = '';
+      dropHint.classList.add('hidden');
 
-      /* hide drop hint */
-      dropHint.classList.add("hidden");
-
-      /* resize canvas, fit to screen, render */
       resizeCanvasToImage();
-      fitToScreen(); // auto-fit on first load
+      fitToScreen();
       renderImage();
 
-      if (typeof saveHistory === "function") saveHistory();
+      if (typeof saveHistory === 'function') saveHistory('Załadowano plik');
+      if (typeof drawRulers  === 'function') drawRulers();
+      showToast(`✓ Załadowano: ${file.name}`);
     };
-    img.src = e.target.result;
+    img.onerror = () => showToast('❌ Nie można otworzyć pliku.');
+    img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-/* ==========================================================
-   DRAG & DROP on canvas wrapper
-   ========================================================== */
-canvasWrapper.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  canvasWrapper.classList.add("drag-over");
+/* ────────────────────────────────────────────────────────────
+   WYCZYSZCZENIE OBRAZU
+   ──────────────────────────────────────────────────────────── */
+document.getElementById('clearImageBtn').addEventListener('click', () => {
+  if (!GP.imageLoaded) { showToast('Brak załadowanego obrazu.'); return; }
+  showConfirm('Wyczyść obraz',
+    'Spowoduje to usunięcie aktualnego obrazu z edytora. Niezapisane zmiany zostaną utracone. Kontynuować?',
+    () => {
+      GP.image       = null;
+      GP.imageLoaded = false;
+      GP.zoom        = 100;
+      GP.rotation    = 0;
+      GP.flipX       = 1;
+      GP.flipY       = 1;
+
+      fileNameDisp.textContent = 'Wybierz obraz…';
+      imageInfo.style.display  = 'none';
+      dropHint.classList.remove('hidden');
+
+      const c = document.getElementById('editorCanvas');
+      c.width = c.height = 1;
+      c.getContext('2d').clearRect(0,0,1,1);
+      c.style.transform = '';
+
+      resetFiltersToDefault();
+      resetAllSliders();
+      if (typeof clearHistoryStack === 'function') clearHistoryStack();
+      showToast('Obraz usunięty.');
+    }, '🗑');
 });
-canvasWrapper.addEventListener("dragleave", () =>
-  canvasWrapper.classList.remove("drag-over"),
-);
-canvasWrapper.addEventListener("drop", (e) => {
+
+/* ────────────────────────────────────────────────────────────
+   DRAG & DROP
+   ──────────────────────────────────────────────────────────── */
+canvasWrapper.addEventListener('dragover',  e => { e.preventDefault(); canvasWrapper.classList.add('drag-over'); });
+canvasWrapper.addEventListener('dragleave', ()  => canvasWrapper.classList.remove('drag-over'));
+canvasWrapper.addEventListener('drop', e => {
   e.preventDefault();
-  canvasWrapper.classList.remove("drag-over");
+  canvasWrapper.classList.remove('drag-over');
   const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith("image/")) {
-    loadImageFile(file);
-    imageLoader.value = ""; // reset so same file can be re-dropped
-  }
+  if (file && file.type.startsWith('image/')) loadImageFile(file);
 });
 
-/* also make the file-label button work */
-document
-  .querySelector(".file-upload-label")
-  ?.addEventListener("click", () => imageLoader.click());
-
-/* ==========================================================
-   CANVAS RESIZE
-   ========================================================== */
+/* ────────────────────────────────────────────────────────────
+   ROZMIAR CANVASU
+   ──────────────────────────────────────────────────────────── */
 function resizeCanvasToImage() {
   if (!GP.imageLoaded) return;
-  canvas.width = GP.image.naturalWidth;
+  canvas.width  = GP.image.naturalWidth;
   canvas.height = GP.image.naturalHeight;
 }
 
-/* ==========================================================
+/* ────────────────────────────────────────────────────────────
    ZOOM
-   ========================================================== */
-document.getElementById("zoomInBtn").addEventListener("click", () => {
+   ──────────────────────────────────────────────────────────── */
+document.getElementById('zoomInBtn').addEventListener('click', () => {
   if (!GP.imageLoaded) return;
-  GP.zoom = Math.min(GP.zoom + 10, 3200);
-  updateZoom(true);
+  GP.zoom = Math.min(GP.zoom + (GP.settings.zoomStep||10), 3200);
+  updateZoom(GP.settings.autoCenterZoom);
 });
-
-document.getElementById("zoomOutBtn").addEventListener("click", () => {
+document.getElementById('zoomOutBtn').addEventListener('click', () => {
   if (!GP.imageLoaded) return;
-  GP.zoom = Math.max(GP.zoom - 10, 5);
-  updateZoom(true);
+  GP.zoom = Math.max(GP.zoom - (GP.settings.zoomStep||10), 5);
+  updateZoom(GP.settings.autoCenterZoom);
 });
-
-document.getElementById("zoomResetBtn").addEventListener("click", () => {
+document.getElementById('zoomResetBtn').addEventListener('click', () => {
   if (!GP.imageLoaded) return;
   GP.zoom = 100;
   updateZoom(true);
@@ -146,231 +226,175 @@ function updateZoom(center = false) {
   zoomValueEl.textContent = `${GP.zoom}%`;
   renderImage();
   if (center) centerCanvas();
+  if (typeof drawRulers === 'function' && GP.settings.showRulers) drawRulers();
 }
 
-/* ==========================================================
-   FIT TO SCREEN
-   ========================================================== */
-document.getElementById("fitScreenBtn").addEventListener("click", fitToScreen);
+/* ────────────────────────────────────────────────────────────
+   DOPASOWANIE DO EKRANU
+   ──────────────────────────────────────────────────────────── */
+document.getElementById('fitScreenBtn').addEventListener('click', fitToScreen);
 
 function fitToScreen() {
   if (!GP.imageLoaded) return;
-  const wrapper = canvasWrapper;
-  const available_w = wrapper.clientWidth - 100;
-  const available_h = wrapper.clientHeight - 100;
-  const scale_x = available_w / GP.image.naturalWidth;
-  const scale_y = available_h / GP.image.naturalHeight;
-  const zoom = Math.floor(Math.min(scale_x, scale_y) * 100);
-  GP.zoom = Math.max(5, Math.min(zoom, 3200));
+  const w  = canvasWrapper.clientWidth  - 100;
+  const h  = canvasWrapper.clientHeight - 100;
+  const sx = w / GP.image.naturalWidth;
+  const sy = h / GP.image.naturalHeight;
+  GP.zoom  = Math.max(5, Math.min(Math.floor(Math.min(sx, sy)*100), 3200));
   updateZoom(true);
 }
 
-/* ==========================================================
-   CENTER CANVAS
-   ========================================================== */
-document
-  .getElementById("centerScreenBtn")
-  .addEventListener("click", () => centerCanvas());
+/* ────────────────────────────────────────────────────────────
+   CENTROWANIE
+   ──────────────────────────────────────────────────────────── */
+document.getElementById('centerScreenBtn').addEventListener('click', () => centerCanvas());
 
 function centerCanvas() {
   requestAnimationFrame(() => {
-    canvasWrapper.scrollLeft =
-      (canvasWrapper.scrollWidth - canvasWrapper.clientWidth) / 2;
-    canvasWrapper.scrollTop =
-      (canvasWrapper.scrollHeight - canvasWrapper.clientHeight) / 2;
+    canvasWrapper.scrollLeft = (canvasWrapper.scrollWidth  - canvasWrapper.clientWidth)  / 2;
+    canvasWrapper.scrollTop  = (canvasWrapper.scrollHeight - canvasWrapper.clientHeight) / 2;
   });
 }
 
-/* ==========================================================
-   MIDDLE-MOUSE / SPACE+DRAG panning (canvas stage)
-   ========================================================== */
+/* ────────────────────────────────────────────────────────────
+   PRZESUWANIE (środkowy przycisk myszy lub Alt+LMB)
+   ──────────────────────────────────────────────────────────── */
 let _panActive = false;
-let _panStart = { x: 0, y: 0, sl: 0, st: 0 };
+let _panStart  = {x:0,y:0,sl:0,st:0};
 
-canvasWrapper.addEventListener("mousedown", (e) => {
-  if ((e.button === 1) || (e.button === 0 && e.altKey)) {
+canvasWrapper.addEventListener('mousedown', e => {
+  if (e.button === 1 || (e.button === 0 && e.altKey)) {
     _panActive = true;
-    _panStart = {
-      x: e.clientX,
-      y: e.clientY,
-      sl: canvasWrapper.scrollLeft,
-      st: canvasWrapper.scrollTop,
-    };
-    canvasWrapper.style.cursor = "grabbing";
+    _panStart  = {x:e.clientX,y:e.clientY,sl:canvasWrapper.scrollLeft,st:canvasWrapper.scrollTop};
+    canvasWrapper.style.cursor = 'grabbing';
     e.preventDefault();
   }
 });
-
-window.addEventListener("mousemove", (e) => {
+window.addEventListener('mousemove', e => {
   if (!_panActive) return;
   canvasWrapper.scrollLeft = _panStart.sl - (e.clientX - _panStart.x);
-  canvasWrapper.scrollTop = _panStart.st - (e.clientY - _panStart.y);
+  canvasWrapper.scrollTop  = _panStart.st - (e.clientY - _panStart.y);
 });
+window.addEventListener('mouseup', () => { _panActive = false; canvasWrapper.style.cursor = ''; });
 
-window.addEventListener("mouseup", () => {
-  _panActive = false;
-  canvasWrapper.style.cursor = "";
-});
+/* Ctrl+Scroll = zoom */
+canvasWrapper.addEventListener('wheel', e => {
+  if (!GP.imageLoaded) return;
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    const d = e.deltaY < 0 ? (GP.settings.zoomStep||10) : -(GP.settings.zoomStep||10);
+    GP.zoom = Math.max(5, Math.min(GP.zoom + d, 3200));
+    updateZoom(false);
+  }
+}, {passive:false});
 
-/* Ctrl+Scroll zoom */
-canvasWrapper.addEventListener(
-  "wheel",
-  (e) => {
-    if (!GP.imageLoaded) return;
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 10 : -10;
-      GP.zoom = Math.max(5, Math.min(GP.zoom + delta, 3200));
-      updateZoom(false);
-    }
-  },
-  { passive: false },
-);
-
-/* ==========================================================
-   ROTATION
-   ========================================================== */
-document.getElementById("rotateLeftBtn").addEventListener("click", () => {
+/* ────────────────────────────────────────────────────────────
+   OBRÓT
+   ──────────────────────────────────────────────────────────── */
+document.getElementById('rotateLeftBtn').addEventListener('click', () => {
   if (!GP.imageLoaded) return;
   GP.rotation -= 90;
-  renderImage();
-  saveHistory();
+  renderImage(); saveHistory('Obrót w lewo');
 });
-
-document.getElementById("rotateRightBtn").addEventListener("click", () => {
+document.getElementById('rotateRightBtn').addEventListener('click', () => {
   if (!GP.imageLoaded) return;
   GP.rotation += 90;
-  renderImage();
-  saveHistory();
+  renderImage(); saveHistory('Obrót w prawo');
 });
 
-/* ==========================================================
-   FLIP
-   ========================================================== */
-document.getElementById("flipHorizontalBtn").addEventListener("click", () => {
+/* ────────────────────────────────────────────────────────────
+   LUSTRZANE ODBICIE
+   ──────────────────────────────────────────────────────────── */
+document.getElementById('flipHorizontalBtn').addEventListener('click', () => {
   if (!GP.imageLoaded) return;
-  GP.flipX *= -1;
-  renderImage();
-  saveHistory();
+  GP.flipX *= -1; renderImage(); saveHistory('Lustro poziome');
 });
-
-document.getElementById("flipVerticalBtn").addEventListener("click", () => {
+document.getElementById('flipVerticalBtn').addEventListener('click', () => {
   if (!GP.imageLoaded) return;
-  GP.flipY *= -1;
-  renderImage();
-  saveHistory();
+  GP.flipY *= -1; renderImage(); saveHistory('Lustro pionowe');
 });
 
-/* ==========================================================
-   RESET ALL
-   ========================================================== */
-document.getElementById("resetAllBtn").addEventListener("click", resetAll);
+/* ────────────────────────────────────────────────────────────
+   RESET WSZYSTKICH KOREKT
+   ──────────────────────────────────────────────────────────── */
+document.getElementById('resetAllBtn').addEventListener('click', () => {
+  showConfirm('Resetuj korekty',
+    'Spowoduje to przywrócenie wszystkich suwaków do wartości domyślnych. Kontynuować?',
+    resetAll, '↺');
+});
 
 function resetAll() {
-  GP.filters = {
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    sharpness: 0,
-    blur: 0,
-    grayscale: 0,
-    sepia: 0,
-    hue: 0,
-    invert: 0,
-    opacity: 100,
-  };
-  GP.rotation = 0;
-  GP.flipX = 1;
-  GP.flipY = 1;
-  GP.zoom = 100;
-
-  GP.sharpenPro = {
-    amount: 70,
-    radius: 2,
-    threshold: 4,
-    enabled: false,
-  };
-
-  zoomValueEl.textContent = "100%";
+  resetFiltersToDefault();
+  GP.rotation   = 0; GP.flipX = 1; GP.flipY = 1; GP.zoom = 100;
+  GP.sharpenPro = {amount:70, radius:2, threshold:4, enabled:false};
+  GP.vignette   = {strength:0, enabled:false};
+  zoomValueEl.textContent = '100%';
   resetAllSliders();
   renderImage();
   centerCanvas();
-  if (typeof saveHistory === "function") saveHistory();
+  saveHistory('Reset wszystkiego');
+  showToast('Korekty przywrócone do domyślnych.');
 }
 
-/* ==========================================================
-   SLIDER RESET HELPER
-   ========================================================== */
-function resetAllSliders() {
-  const defaults = {
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    sharpness: 0,
-    blur: 0,
-    grayscale: 0,
-    sepia: 0,
-    hue: 0,
-    invert: 0,
-    opacity: 100,
+function resetFiltersToDefault() {
+  GP.filters = {
+    brightness:100, contrast:100, saturation:100,
+    sharpness:0, blur:0, grayscale:0, sepia:0, hue:0, invert:0, opacity:100
   };
-  for (const [id, val] of Object.entries(defaults)) {
-    const el = document.getElementById(id);
+}
+
+function resetAllSliders() {
+  const defaults = {brightness:100,contrast:100,saturation:100,sharpness:0,blur:0,grayscale:0,sepia:0,hue:0,invert:0,opacity:100};
+  for (const [id,val] of Object.entries(defaults)) {
+    const el  = document.getElementById(id);
     const lbl = document.getElementById(`${id}Value`);
-    if (el) el.value = val;
+    if (el)  el.value        = val;
     if (lbl) lbl.textContent = val;
   }
-
-  const proAmount = document.getElementById("proAmount");
-  const proRadius = document.getElementById("proRadius");
-  const proThreshold = document.getElementById("proThreshold");
-  const proAmountValue = document.getElementById("proAmountValue");
-  const proRadiusValue = document.getElementById("proRadiusValue");
-  const proThresholdValue = document.getElementById("proThresholdValue");
-
-  if (proAmount) {
-    proAmount.value = 70;
-    proAmountValue.textContent = 70;
-  }
-
-  if (proRadius) {
-    proRadius.value = 2;
-    proRadiusValue.textContent = 2;
-  }
-
-  if (proThreshold) {
-    proThreshold.value = 4;
-    proThresholdValue.textContent = 4;
+  const map = {proAmount:[70,'proAmountValue'], proRadius:[2,'proRadiusValue'], proThreshold:[4,'proThresholdValue'], vignetteStrength:[0,'vignetteValue']};
+  for (const [id,[val,lblId]] of Object.entries(map)) {
+    const el  = document.getElementById(id);
+    const lbl = document.getElementById(lblId);
+    if (el)  el.value        = val;
+    if (lbl) lbl.textContent = val;
   }
 }
 
-/* ==========================================================
-   CROP UNSAVED WARNING
-   — show warning when entering crop if there are active filters
-   ========================================================== */
-document.getElementById("startCropBtn")?.addEventListener("click", () => {
-  const anyActive = Object.entries(GP.filters).some(([k, v]) => {
-    const defaults = {
-      brightness: 100,
-      contrast: 100,
-      saturation: 100,
-      sharpness: 0,
-      blur: 0,
-      grayscale: 0,
-      sepia: 0,
-      hue: 0,
-      invert: 0,
-      opacity: 100,
-    };
-    return v !== defaults[k];
+/* ────────────────────────────────────────────────────────────
+   USTAWIENIA
+   ──────────────────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('showRulers').addEventListener('change', e => {
+    GP.settings.showRulers = e.target.checked;
+    const rw = document.getElementById('rulerWrap');
+    rw.style.display = e.target.checked ? 'grid' : 'none';
+    if (e.target.checked && typeof drawRulers === 'function') drawRulers();
   });
-  const warn = document.getElementById("cropUnsavedWarning");
-  if (warn) warn.style.display = anyActive ? "" : "none";
+  document.getElementById('rulerUnit').addEventListener('change', e => {
+    GP.settings.rulerUnit = e.target.value;
+    if (typeof drawRulers === 'function') drawRulers();
+  });
+  document.getElementById('rulerDpi').addEventListener('change', e => {
+    GP.settings.rulerDpi = Number(e.target.value) || 96;
+    if (typeof drawRulers === 'function') drawRulers();
+  });
+  document.getElementById('zoomStep').addEventListener('change', e => {
+    GP.settings.zoomStep = Number(e.target.value);
+  });
+  document.getElementById('autoCenterZoom').addEventListener('change', e => {
+    GP.settings.autoCenterZoom = e.target.checked;
+  });
+  console.log('GP Photo Studio 2.1 — gotowy');
 });
 
-/* ==========================================================
-   INIT
-   ========================================================== */
-window.addEventListener("DOMContentLoaded", () => {
-  console.log("GP Photo Studio 2.0 Canvas Edition — ready");
-});
+/* ────────────────────────────────────────────────────────────
+   EKSPORT PUBLICZNY
+   ──────────────────────────────────────────────────────────── */
+window.loadImageFile         = loadImageFile;
+window.fitToScreen           = fitToScreen;
+window.updateZoom            = updateZoom;
+window.centerCanvas          = centerCanvas;
+window.resizeCanvasToImage   = resizeCanvasToImage;
+window.resetFiltersToDefault = resetFiltersToDefault;
+window.resetAllSliders       = resetAllSliders;
+window.resetAll              = resetAll;

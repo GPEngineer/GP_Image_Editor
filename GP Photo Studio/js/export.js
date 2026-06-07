@@ -1,358 +1,173 @@
-/* ==========================================================
-   GP Photo Studio 2.0 Canvas Edition
-   export.js  v3.0
-   ========================================================== */
-
+/* ============================================================
+   GP Photo Studio 2.1 — export.js  v4.0
+   Eksport do JPG, PNG, WEBP, TIFF (UTIF), GIF (GIF.js), BMP
+   ============================================================ */
 "use strict";
 
-/* ==========================================================
-   STATE
-   ========================================================== */
-let _pendingFormat = null; // 'jpg' | 'png' | 'webp' | 'tiff' | 'bmp'
+let _pendingFormat = null;
 
-/* ==========================================================
-   DOM
-   ========================================================== */
-const qualityDialog = document.getElementById("qualityDialog");
-const qualitySlider = document.getElementById("qualitySlider");
-const qualityValueEl = document.getElementById("qualityValue");
-const qualityOkBtn = document.getElementById("qualityOkBtn");
-const qualityCancelBtn = document.getElementById("qualityCancelBtn");
+/* ────────────────────────────────────────────────────────────
+   JAKOŚĆ
+   ──────────────────────────────────────────────────────────── */
+const qualityDialog   = document.getElementById('qualityDialog');
+const qualitySlider   = document.getElementById('qualitySlider');
+const qualityValueEl  = document.getElementById('qualityValue');
+const qualityOkBtn    = document.getElementById('qualityOkBtn');
+const qualityCancelBtn= document.getElementById('qualityCancelBtn');
+const qualityLabel    = document.getElementById('qualityFormatLabel');
 
-/* ==========================================================
-   QUALITY SLIDER SYNC
-   ========================================================== */
-qualitySlider?.addEventListener("input", () => {
+qualitySlider?.addEventListener('input', () => {
   if (qualityValueEl) qualityValueEl.textContent = qualitySlider.value;
 });
 
-/* ==========================================================
-   BUTTON LISTENERS
-   ========================================================== */
-document
-  .getElementById("saveJpgBtn")
-  ?.addEventListener("click", () => requestSave("jpg"));
-document
-  .getElementById("savePngBtn")
-  ?.addEventListener("click", () => requestSave("png"));
-document
-  .getElementById("saveWebpBtn")
-  ?.addEventListener("click", () => requestSave("webp"));
-document
-  .getElementById("saveTiffBtn")
-  ?.addEventListener("click", () => requestSave("tiff"));
-document
-  .getElementById("saveBmpBtn")
-  ?.addEventListener("click", () => requestSave("bmp"));
-document
-  .getElementById("saveGifBtn")
-  ?.addEventListener("click", () => requestSave("gif"));
+/* ────────────────────────────────────────────────────────────
+   PRZYCISKI ZAPISU
+   ──────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('saveJpgBtn') ?.addEventListener('click', () => requestSave('jpg'));
+  document.getElementById('savePngBtn') ?.addEventListener('click', () => requestSave('png'));
+  document.getElementById('saveWebpBtn')?.addEventListener('click', () => requestSave('webp'));
+  document.getElementById('saveTiffBtn')?.addEventListener('click', () => requestSave('tiff'));
+  document.getElementById('saveGifBtn') ?.addEventListener('click', () => requestSave('gif'));
+  document.getElementById('saveBmpBtn') ?.addEventListener('click', () => requestSave('bmp'));
+  qualityOkBtn    ?.addEventListener('click', confirmSave);
+  qualityCancelBtn?.addEventListener('click', cancelSave);
+});
 
-qualityOkBtn?.addEventListener("click", confirmSave);
-qualityCancelBtn?.addEventListener("click", cancelSave);
-
-/* ==========================================================
-   REQUEST SAVE  — show quality dialog for lossy formats
-   ========================================================== */
+/* ────────────────────────────────────────────────────────────
+   ŻĄDANIE ZAPISU
+   ──────────────────────────────────────────────────────────── */
 function requestSave(format) {
-  if (!GP.imageLoaded) {
-    showToast("Load an image first.");
-    return;
-  }
-
+  if (!GP.imageLoaded) { showToast('Load an image first.'); return; }
   _pendingFormat = format;
 
-  /* PNG is lossless — no quality dialog needed */
-  if (
-    format === "png" ||
-    format === "bmp" ||
-    format === "gif" ||
-    format === "tiff"
-  ) {
+  const lossless = ['png','bmp','tiff','gif'];
+  if (lossless.includes(format)) {
     performSave(format, 100);
     return;
   }
-
-  /* show quality dialog */
-  if (qualityDialog) qualityDialog.style.display = "block";
+  /* JPG / WEBP — pokaż dialog jakości */
+  if (qualityLabel) qualityLabel.textContent = format.toUpperCase();
+  if (qualityDialog) qualityDialog.style.display = 'block';
 }
 
-/* ==========================================================
-   CONFIRM SAVE
-   ========================================================== */
 function confirmSave() {
-  const quality = qualitySlider ? Number(qualitySlider.value) : 90;
-  hideQualityDialog();
-  if (_pendingFormat) performSave(_pendingFormat, quality);
+  const q = qualitySlider ? Number(qualitySlider.value) : 90;
+  if (qualityDialog) qualityDialog.style.display = 'none';
+  if (_pendingFormat) performSave(_pendingFormat, q);
   _pendingFormat = null;
 }
-
 function cancelSave() {
-  hideQualityDialog();
+  if (qualityDialog) qualityDialog.style.display = 'none';
   _pendingFormat = null;
 }
 
-function hideQualityDialog() {
-  if (qualityDialog) qualityDialog.style.display = "none";
-}
-
-/* ==========================================================
-   PERFORM SAVE
-   ========================================================== */
+/* ────────────────────────────────────────────────────────────
+   WYKONANIE ZAPISU
+   ──────────────────────────────────────────────────────────── */
 function performSave(format, quality) {
-  const canvas = getRenderedCanvas();
-  const q = quality / 100;
-
-  switch (format) {
-    case "jpg":
-      saveAsJpeg(canvas, q);
-      break;
-    case "png":
-      saveAsPng(canvas);
-      break;
-    case "webp":
-      saveAsWebp(canvas, q);
-      break;
-    case "tiff":
-      saveAsTiff(canvas);
-      break;
-    case "gif":
-      saveAsGif(canvas);
-      break;
-    case "bmp":
-      saveAsBmp(canvas);
-      break;
+  const cv = getRenderedCanvas();
+  const q  = quality / 100;
+  switch(format) {
+    case 'jpg':  saveJpeg(cv, q);   break;
+    case 'png':  savePng(cv);       break;
+    case 'webp': saveWebp(cv, q);   break;
+    case 'tiff': saveTiff(cv);      break;
+    case 'gif':  saveGif(cv);       break;
+    case 'bmp':  saveBmp(cv);       break;
   }
 }
 
-/* ==========================================================
-   JPEG
-   ========================================================== */
-function saveAsJpeg(canvas, quality) {
-  /* JPEG doesn't support alpha — flatten onto white */
-  const flat = flattenToWhite(canvas);
-  const dataURL = flat.toDataURL("image/jpeg", quality);
-  triggerDownload(dataURL, "photo.jpg");
-}
-
-/* ==========================================================
-   PNG
-   ========================================================== */
-function saveAsPng(canvas) {
-  triggerDownload(canvas.toDataURL("image/png"), "photo.png");
-}
-
-/* ==========================================================
-   WEBP
-   ========================================================== */
-function saveAsWebp(canvas, quality) {
-  const dataURL = canvas.toDataURL("image/webp", quality);
-  triggerDownload(dataURL, "photo.webp");
-}
-
-/* ==========================================================
-   TIFF  (via UTIF library)
-   ========================================================== */
-function saveAsTiff(canvas) {
-  if (!window.UTIF) {
-    showToast("UTIF library not loaded.");
-    return;
-  }
-  const ctx = canvas.getContext("2d");
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const buffer = UTIF.encodeImage(imageData.data, canvas.width, canvas.height);
-  const blob = new Blob([buffer], {
-    type: "image/tiff",
-  });
-  const url = URL.createObjectURL(blob);
-  triggerDownload(url, "photo.tif");
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-  }, 10000);
-}
-
-/* ==========================================================
-   BMP  (via bmp-js library)
-   ========================================================== */
-function saveAsBmp(canvas) {
-  const ctx = canvas.getContext("2d");
-  const width = canvas.width;
-  const height = canvas.height;
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const pixels = imageData.data;
-  const rowSize = Math.floor((24 * width + 31) / 32) * 4;
-  const pixelArraySize = rowSize * height;
-  const fileSize = 54 + pixelArraySize;
-  const buffer = new ArrayBuffer(fileSize);
-  const view = new DataView(buffer);
-  let offset = 0;
-
-  /* ========= BMP HEADER ========= */
-
-  view.setUint8(offset++, 0x42);
-  view.setUint8(offset++, 0x4d);
-  view.setUint32(offset, fileSize, true);
-  offset += 4;
-  view.setUint16(offset, 0, true);
-  offset += 2;
-  view.setUint16(offset, 0, true);
-  offset += 2;
-  view.setUint32(offset, 54, true);
-  offset += 4;
-
-  /* ========= DIB HEADER ========= */
-
-  view.setUint32(offset, 40, true);
-  offset += 4;
-  view.setInt32(offset, width, true);
-  offset += 4;
-  view.setInt32(offset, height, true);
-  offset += 4;
-  view.setUint16(offset, 1, true);
-  offset += 2;
-  view.setUint16(offset, 24, true);
-  offset += 2;
-  view.setUint32(offset, 0, true);
-  offset += 4;
-  view.setUint32(offset, pixelArraySize, true);
-  offset += 4;
-  view.setInt32(offset, 2835, true);
-  offset += 4;
-  view.setInt32(offset, 2835, true);
-  offset += 4;
-  view.setUint32(offset, 0, true);
-  offset += 4;
-  view.setUint32(offset, 0, true);
-  offset += 4;
-
-  /* ========= PIXELS ========= */
-
-  const padding = rowSize - width * 3;
-  for (let y = height - 1; y >= 0; y--) {
-    for (let x = 0; x < width; x++) {
-      const pos = (y * width + x) * 4;
-      const r = pixels[pos];
-      const g = pixels[pos + 1];
-      const b = pixels[pos + 2];
-      view.setUint8(offset++, b);
-      view.setUint8(offset++, g);
-      view.setUint8(offset++, r);
-    }
-
-    for (let p = 0; p < padding; p++) {
-      view.setUint8(offset++, 0);
-    }
-  }
-
-  const blob = new Blob([buffer], { type: "image/bmp" });
-  const url = URL.createObjectURL(blob);
-
-  triggerDownload(url, "photo.bmp");
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-}
-
-/* ==========================================================
-   GIF  (via GIF.js library)
-   ========================================================== */
-
-function saveAsGif(canvas) {
-  if (!window.GIF) {
-    showToast("GIF.js library not loaded.");
-    return;
-  }
-
-  const gif = new GIF({
-    workers: 2,
-    quality: 10,
-    workerScript: "libs/gif.worker.js",
-  });
-
-  gif.addFrame(canvas, {
-    copy: true,
-    delay: 100,
-  });
-
-  showToast("Generating GIF...");
-
-  gif.on("finished", function (blob) {
-    const url = URL.createObjectURL(blob);
-
-    triggerDownload(url, "photo.gif");
-
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 10000);
-
-    showToast("GIF saved.");
-  });
-
-  gif.render();
-}
-
-/* ==========================================================
-   HELPERS
-   ========================================================== */
-
-/** Flatten transparent canvas onto a white background (for JPEG). */
-function flattenToWhite(src) {
-  const tmp = document.createElement("canvas");
-  tmp.width = src.width;
-  tmp.height = src.height;
-  const ctx = tmp.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, tmp.width, tmp.height);
-  ctx.drawImage(src, 0, 0);
+/* ────────────────────────────────────────────────────────────
+   FORMATY
+   ──────────────────────────────────────────────────────────── */
+function flattenWhite(src) {
+  const tmp = document.createElement('canvas');
+  tmp.width = src.width; tmp.height = src.height;
+  const c = tmp.getContext('2d');
+  c.fillStyle = '#ffffff'; c.fillRect(0,0,tmp.width,tmp.height);
+  c.drawImage(src,0,0);
   return tmp;
 }
 
-/** Trigger a browser download from a dataURL or object URL. */
-function triggerDownload(url, filename) {
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+function triggerDownload(url, name) {
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-/* ==========================================================
-   TOAST  (lightweight notification)
-   ========================================================== */
-function showToast(msg, duration = 3000) {
-  let toast = document.getElementById("gpToast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "gpToast";
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 24px; left: 50%;
-      transform: translateX(-50%);
-      background: #1a2740;
-      color: #dce8f5;
-      border: 1px solid #243d5c;
-      padding: 9px 18px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-family: inherit;
-      z-index: 9999;
-      box-shadow: 0 4px 16px rgba(0,0,0,.5);
-      transition: opacity .3s;
-    `;
-    document.body.appendChild(toast);
+function saveJpeg(cv, q) {
+  triggerDownload(flattenWhite(cv).toDataURL('image/jpeg', q),
+    (GP.fileName||'photo') + '.jpg');
+  showToast('✓ JPG saved.');
+}
+function savePng(cv) {
+  triggerDownload(cv.toDataURL('image/png'), (GP.fileName||'photo') + '.png');
+  showToast('✓ PNG saved.');
+}
+function saveWebp(cv, q) {
+  triggerDownload(cv.toDataURL('image/webp', q), (GP.fileName||'photo') + '.webp');
+  showToast('✓ WEBP saved.');
+}
+
+function saveTiff(cv) {
+  if (!window.UTIF) { showToast('UTIF library not loaded.'); return; }
+  const ctx = cv.getContext('2d');
+  const id  = ctx.getImageData(0,0,cv.width,cv.height);
+  const buf = UTIF.encodeImage(id.data, cv.width, cv.height);
+  const url = URL.createObjectURL(new Blob([buf],{type:'image/tiff'}));
+  triggerDownload(url, (GP.fileName||'photo') + '.tif');
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToast('✓ TIFF saved.');
+}
+
+function saveBmp(cv) {
+  const ctx   = cv.getContext('2d');
+  const w     = cv.width, h = cv.height;
+  const px    = ctx.getImageData(0,0,w,h).data;
+  const row   = Math.floor((24*w+31)/32)*4;
+  const pxSz  = row*h;
+  const fSz   = 54+pxSz;
+  const buf   = new ArrayBuffer(fSz);
+  const view  = new DataView(buf);
+  let off = 0;
+  view.setUint8(off++,0x42); view.setUint8(off++,0x4d);
+  view.setUint32(off,fSz,true); off+=4;
+  view.setUint16(off,0,true); off+=2; view.setUint16(off,0,true); off+=2;
+  view.setUint32(off,54,true); off+=4;
+  view.setUint32(off,40,true); off+=4; view.setInt32(off,w,true); off+=4;
+  view.setInt32(off,h,true); off+=4; view.setUint16(off,1,true); off+=2;
+  view.setUint16(off,24,true); off+=2; view.setUint32(off,0,true); off+=4;
+  view.setUint32(off,pxSz,true); off+=4;
+  view.setInt32(off,2835,true); off+=4; view.setInt32(off,2835,true); off+=4;
+  view.setUint32(off,0,true); off+=4; view.setUint32(off,0,true); off+=4;
+  const pad = row-w*3;
+  for (let y=h-1;y>=0;y--) {
+    for (let x=0;x<w;x++) {
+      const p=(y*w+x)*4;
+      view.setUint8(off++,px[p+2]); view.setUint8(off++,px[p+1]); view.setUint8(off++,px[p]);
+    }
+    for (let p=0;p<pad;p++) view.setUint8(off++,0);
   }
-
-  toast.textContent = msg;
-  toast.style.opacity = "1";
-
-  clearTimeout(toast._hideTimer);
-  toast._hideTimer = setTimeout(() => {
-    toast.style.opacity = "0";
-  }, duration);
+  const url = URL.createObjectURL(new Blob([buf],{type:'image/bmp'}));
+  triggerDownload(url, (GP.fileName||'photo') + '.bmp');
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToast('✓ BMP saved.');
 }
 
-/* ==========================================================
-   PUBLIC
-   ========================================================== */
+function saveGif(cv) {
+  if (!window.GIF) { showToast('GIF.js not loaded.'); return; }
+  const gif = new GIF({ workers:2, quality:10, workerScript:'libs/gif.worker.js' });
+  gif.addFrame(cv, { copy:true, delay:100 });
+  showToast('Generating GIF…');
+  gif.on('finished', blob => {
+    const url = URL.createObjectURL(blob);
+    triggerDownload(url, (GP.fileName||'photo') + '.gif');
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    showToast('✓ GIF saved.');
+  });
+  gif.render();
+}
+
 window.requestSave = requestSave;
-window.showToast = showToast;
+window.showToast   = window.showToast || function(){};
