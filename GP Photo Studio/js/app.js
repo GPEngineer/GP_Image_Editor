@@ -398,3 +398,91 @@ window.resizeCanvasToImage   = resizeCanvasToImage;
 window.resetFiltersToDefault = resetFiltersToDefault;
 window.resetAllSliders       = resetAllSliders;
 window.resetAll              = resetAll;
+
+/* ════════════════════════════════════════════════════════════
+   TRANSFORM — Apply / Cancel
+   (snapshot stanu przed transformacją, przywróć przy Cancel)
+   ════════════════════════════════════════════════════════════ */
+let _transformSnap = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  /* Snapshot przy każdym otwarciu sekcji Transform */
+  document.querySelector('#mainToolbar')?.closest('.app-layout')
+    ?.querySelectorAll('details').forEach(d => {
+      if (d.querySelector('#transformApplyBtn')) {
+        d.addEventListener('toggle', () => {
+          if (d.open) _transformSnap = {
+            rotation:GP.rotation, flipX:GP.flipX, flipY:GP.flipY
+          };
+        });
+      }
+    });
+
+  /* Wygodniej — snapshot przy każdym kliknięciu przycisku obrótu/lustra */
+  ['rotateLeftBtn','rotateRightBtn','flipHorizontalBtn','flipVerticalBtn'].forEach(id => {
+    document.getElementById(id)?.addEventListener('mousedown', () => {
+      if (!_transformSnap) _transformSnap = { rotation:GP.rotation, flipX:GP.flipX, flipY:GP.flipY };
+    }, true);
+  });
+
+  document.getElementById('transformApplyBtn')?.addEventListener('click', () => {
+    if (!GP.imageLoaded) { showToast('Load an image first.'); return; }
+    _transformSnap = { rotation:GP.rotation, flipX:GP.flipX, flipY:GP.flipY };
+    saveHistory('Transform');
+    showToast('✓ Transform applied.');
+  });
+
+  document.getElementById('transformCancelBtn')?.addEventListener('click', () => {
+    if (_transformSnap) {
+      GP.rotation = _transformSnap.rotation;
+      GP.flipX    = _transformSnap.flipX;
+      GP.flipY    = _transformSnap.flipY;
+      renderImage();
+    }
+    _transformSnap = null;
+    showToast('Transform cancelled.');
+  });
+
+  /* ══ OCR copy / clear buttons ══ */
+  document.getElementById('ocrCopyBtn')?.addEventListener('click', () => {
+    const out = document.getElementById('ocrOutput');
+    if (!out || !out.value) { showToast('Nothing to copy.'); return; }
+    navigator.clipboard?.writeText(out.value)
+      .then(() => showToast('✓ Text copied to clipboard.'))
+      .catch(() => { out.select(); document.execCommand('copy'); showToast('✓ Copied.'); });
+  });
+  document.getElementById('ocrClearBtn')?.addEventListener('click', () => {
+    const out = document.getElementById('ocrOutput');
+    if (out) out.value = '';
+  });
+
+  /* ══ Right Panel toggle ══ */
+  document.getElementById('rightPanelToggle')?.addEventListener('click', () => {
+    const rp  = document.getElementById('rightPanel');
+    const btn = document.getElementById('rightPanelToggle');
+    rp.classList.toggle('collapsed');
+    btn.textContent = rp.classList.contains('collapsed') ? '›' : '‹';
+  });
+
+  /* ══ Sharpen Pro — reset przyciski ══ */
+  document.getElementById('resetProAmount')?.addEventListener('click', () => {
+    const sl = document.getElementById('proAmount'); const lb = document.getElementById('proAmountValue');
+    if (sl) sl.value = 70; if (lb) lb.textContent = 70;
+  });
+  document.getElementById('resetProRadius')?.addEventListener('click', () => {
+    const sl = document.getElementById('proRadius'); const lb = document.getElementById('proRadiusValue');
+    if (sl) sl.value = 2; if (lb) lb.textContent = 2;
+  });
+  document.getElementById('resetProThreshold')?.addEventListener('click', () => {
+    const sl = document.getElementById('proThreshold'); const lb = document.getElementById('proThresholdValue');
+    if (sl) sl.value = 4; if (lb) lb.textContent = 4;
+  });
+
+  /* ══ Vignette — reset ══ */
+  document.getElementById('resetVignette')?.addEventListener('click', () => {
+    const sl = document.getElementById('vignetteStrength'); const lb = document.getElementById('vignetteValue');
+    if (sl) sl.value = 0; if (lb) lb.textContent = 0;
+    GP.vignette = { strength:0, enabled:false };
+    renderImage();
+  });
+});
