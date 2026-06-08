@@ -1,64 +1,51 @@
 /* ============================================================
-   GP Photo Studio 2.1 — right-panel.js  v5.0
-   Prawy panel: collapse/expand, pin, resize (drag left edge)
+   GP Photo Studio 2.1 — right-panel.js  v6.0
+   Right panel: collapse/expand to icon width, resize (drag left edge)
+   Pin button removed. Panel always docked (occupies grid space).
    ============================================================ */
 "use strict";
 
-const RP_MIN_W  = 180;
-const RP_MAX_W  = 520;
-const RP_DEFAULT= 248;
+const RP_MIN_W    = 180;
+const RP_MAX_W    = 520;
+const RP_DEFAULT  = 248;
+const RP_ICON_W   = 36;   /* collapsed width — just the toggle icon */
 
-let _rpPinned    = true;   // true = panel zajmuje miejsce w layoucie
 let _rpCollapsed = false;
 let _rpWidth     = RP_DEFAULT;
 
 document.addEventListener('DOMContentLoaded', initRightPanel);
 
 function initRightPanel() {
-  const layout     = document.getElementById('appLayout');
-  const panel      = document.getElementById('rightPanel');
-  const collapseBtn= document.getElementById('rpCollapseBtn');
-  const pinBtn     = document.getElementById('rpPinBtn');
-  const handle     = document.getElementById('rpResizeHandle');
+  const layout      = document.getElementById('appLayout');
+  const panel       = document.getElementById('rightPanel');
+  const collapseBtn = document.getElementById('rpCollapseBtn');
+  const handle      = document.getElementById('rpResizeHandle');
 
   if (!panel) return;
+
+  /* ── Initial state ── */
+  setRPWidth(_rpWidth);
 
   /* ── Collapse / Expand ── */
   collapseBtn?.addEventListener('click', () => {
     _rpCollapsed = !_rpCollapsed;
     layout.classList.toggle('rp-collapsed', _rpCollapsed);
-    collapseBtn.textContent = _rpCollapsed ? '›' : '‹';
-    collapseBtn.title       = _rpCollapsed ? 'Expand panel' : 'Collapse panel';
-    if (!_rpCollapsed) setRPWidth(_rpWidth);
-  });
 
-  /* ── Pin / Unpin ── */
-  pinBtn?.addEventListener('click', () => {
-    _rpPinned = !_rpPinned;
-    pinBtn.classList.toggle('pinned', _rpPinned);
-    pinBtn.title = _rpPinned ? 'Unpin (floating)' : 'Pin panel';
-
-    if (_rpPinned) {
-      panel.style.position = 'relative';
-      panel.style.right    = '';
-      panel.style.top      = '';
-      panel.style.bottom   = '';
-      panel.style.zIndex   = '';
-      layout.style.gridTemplateColumns = `var(--panel-w) 1fr ${_rpWidth}px`;
+    if (_rpCollapsed) {
+      /* Show expand arrow icon */
+      collapseBtn.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="10,4 6,8 10,12"/></svg>`;
+      collapseBtn.title = 'Expand panel';
+      layout.style.gridTemplateColumns = `var(--panel-w) 1fr ${RP_ICON_W}px`;
     } else {
-      /* Floating mode — overlay, nie zajmuje miejsca w gridzie */
-      panel.style.position = 'fixed';
-      panel.style.right    = '0';
-      panel.style.top      = '0';
-      panel.style.bottom   = '0';
-      panel.style.zIndex   = '100';
-      panel.style.width    = _rpWidth + 'px';
-      layout.style.gridTemplateColumns = `var(--panel-w) 1fr 0px`;
+      /* Show collapse arrow icon */
+      collapseBtn.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="6,4 10,8 6,12"/></svg>`;
+      collapseBtn.title = 'Collapse panel';
+      setRPWidth(_rpWidth);
     }
   });
 
   /* ── Resize (drag left edge) ── */
-  let _resizing = false;
+  let _resizing     = false;
   let _resizeStartX = 0;
   let _resizeStartW = 0;
 
@@ -67,8 +54,8 @@ function initRightPanel() {
     _resizing     = true;
     _resizeStartX = e.clientX;
     _resizeStartW = panel.getBoundingClientRect().width;
-    document.body.style.cursor       = 'ew-resize';
-    document.body.style.userSelect   = 'none';
+    document.body.style.cursor     = 'ew-resize';
+    document.body.style.userSelect = 'none';
     e.preventDefault();
   });
 
@@ -84,25 +71,19 @@ function initRightPanel() {
     if (_resizing) {
       _resizing = false;
       document.body.style.cursor    = '';
-      document.body.style.userSelect= '';
+      document.body.style.userSelect = '';
     }
   });
-
-  /* Init */
-  setRPWidth(_rpWidth);
 }
 
 function setRPWidth(w) {
   const layout = document.getElementById('appLayout');
-  const panel  = document.getElementById('rightPanel');
-  if (!layout || !panel) return;
+  if (!layout) return;
 
-  if (_rpPinned) {
-    layout.style.gridTemplateColumns = _rpCollapsed
-      ? `var(--panel-w) 1fr 28px`
-      : `var(--panel-w) 1fr ${w}px`;
+  if (_rpCollapsed) {
+    layout.style.gridTemplateColumns = `var(--panel-w) 1fr ${RP_ICON_W}px`;
   } else {
-    panel.style.width = w + 'px';
+    layout.style.gridTemplateColumns = `var(--panel-w) 1fr ${w}px`;
   }
 }
 
