@@ -1,26 +1,36 @@
 /* ============================================================
-   GP Photo Studio 2.1 — layers.js  v4.1
-   Layer system: raster + text layers, opacity, flatten, composite rendering
+   GP Photo Studio 2.1 — layers.js  v4.0
+   System warstw: rastrowe + tekstowe, drag-to-reorder,
+   opacity, flatten, composite rendering
    ============================================================ */
 "use strict";
 
 /* ────────────────────────────────────────────────────────────
-   LAYER STATE
+   STAN WARSTW
    ──────────────────────────────────────────────────────────── */
 window.GP_Layers = {
-  list   : [],   // array of layers (index 0 = topmost)
-  active : 0     // index of active layer
+  list   : [],      // tablica warstw (indeks 0 = najwyższa)
+  active : 0        // indeks aktywnej warstwy
 };
+
+/* Struktura warstwy:
+   { id, type:'raster'|'text', name, visible, opacity,
+     canvas (dla raster), 
+     text, fontFamily, fontSize, fontColor, bold, italic,
+     bgColor (dla bloku tekstu, null = transparent),
+     x, y (pozycja tekstbloku)
+   }
+*/
 
 let _layerIdCounter = 1;
 
 /* ────────────────────────────────────────────────────────────
-   LAYER CREATION
+   TWORZENIE WARSTW
    ──────────────────────────────────────────────────────────── */
 function createRasterLayer(name, imageElement) {
-  const cv = document.createElement('canvas');
+  const cv  = document.createElement('canvas');
   if (imageElement) {
-    cv.width  = imageElement.naturalWidth  || imageElement.width;
+    cv.width  = imageElement.naturalWidth || imageElement.width;
     cv.height = imageElement.naturalHeight || imageElement.height;
     cv.getContext('2d').drawImage(imageElement, 0, 0);
   } else {
@@ -34,20 +44,20 @@ function createTextLayer(name) {
   return {
     id: _layerIdCounter++, type:'text',
     name: name||'Text Layer', visible:true, opacity:100,
-    text: 'Double-click to edit',
+    text:'Double-click to edit',
     fontFamily:'DM Sans', fontSize:24,
     fontColor:'#ffffff', bold:false, italic:false,
-    bgColor: null,
+    bgColor: null,   /* null = transparent */
     x:40, y:40
   };
 }
 
 /* ────────────────────────────────────────────────────────────
-   PUBLIC API
+   PUBLICZNE API
    ──────────────────────────────────────────────────────────── */
 function addRasterLayer() {
   const layer = createRasterLayer(`Layer ${_layerIdCounter}`);
-  GP_Layers.list.unshift(layer);
+  GP_Layers.list.unshift(layer);   // na górę listy
   GP_Layers.active = 0;
   refreshLayersUI();
   compositeRender();
@@ -91,7 +101,7 @@ function flattenAllLayers() {
       GP_Layers.list[0].canvas.getContext('2d').drawImage(tmp, 0, 0);
       GP_Layers.active = 0;
 
-      /* Update GP.image */
+      /* Aktualizuj GP.image */
       const img = new Image();
       img.onload = () => { GP.image = img; GP.imageLoaded = true; renderImage(); };
       img.src = tmp.toDataURL('image/png');
@@ -109,100 +119,94 @@ function mergeDown() {
   const bottom = GP_Layers.list[idx + 1];
   if (bottom.type !== 'raster') { showToast('Can only merge down to a raster layer.'); return; }
 
-  /* Render top into bottom */
   const ctx = bottom.canvas.getContext('2d');
-  ctx.save();
   ctx.globalAlpha = top.opacity / 100;
   if (top.type === 'raster') {
     ctx.drawImage(top.canvas, 0, 0);
   } else {
-    drawTextLayer(ctx, top);
+    drawTextLayerToCtx(ctx, top);
   }
-  ctx.restore();
+  ctx.globalAlpha = 1;
 
   GP_Layers.list.splice(idx, 1);
   GP_Layers.active = Math.max(0, idx - 1);
   refreshLayersUI();
   compositeRender();
   saveHistory && saveHistory('Merge Down');
-  showToast('✓ Merged down.');
 }
 
-function setLayerOpacity(idx, value) {
-  if (GP_Layers.list[idx]) {
-    GP_Layers.list[idx].opacity = value;
-    compositeRender();
-  }
+function setLayerOpacity(idx, val) {
+  if (!GP_Layers.list[idx]) return;
+  GP_Layers.list[idx].opacity = val;
+  compositeRender();
 }
 
 function toggleLayerVisibility(idx) {
-  if (GP_Layers.list[idx]) {
-    GP_Layers.list[idx].visible = !GP_Layers.list[idx].visible;
-    const btn = document.querySelector(`.layer-vis[data-idx="${idx}"]`);
-    if (btn) btn.innerHTML = GP_Layers.list[idx].visible
-      ? `<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 8 C3 4 13 4 15 8 C13 12 3 12 1 8Z"/><circle cx="8" cy="8" r="2.5"/></svg>`
-      : `<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.3"><line x1="2" y1="2" x2="14" y2="14"/><path d="M5 5C3 6.5 1 8 1 8S5 13 8 13C9.5 13 11 12.3 12 11"/><path d="M10.5 4C9.7 3.4 8.9 3 8 3C5 3 1 8 1 8"/></svg>`;
-    compositeRender();
-  }
+  if (!GP_Layers.list[idx]) return;
+  GP_Layers.list[idx].visible = !GP_Layers.list[idx].visible;
+  refreshLayersUI();
+  compositeRender();
 }
 
 function moveLayerUp(idx) {
   if (idx <= 0) return;
   [GP_Layers.list[idx], GP_Layers.list[idx-1]] = [GP_Layers.list[idx-1], GP_Layers.list[idx]];
   GP_Layers.active = idx - 1;
-  refreshLayersUI(); compositeRender();
+  refreshLayersUI();
+  compositeRender();
 }
 
 function moveLayerDown(idx) {
   if (idx >= GP_Layers.list.length - 1) return;
   [GP_Layers.list[idx], GP_Layers.list[idx+1]] = [GP_Layers.list[idx+1], GP_Layers.list[idx]];
   GP_Layers.active = idx + 1;
-  refreshLayersUI(); compositeRender();
+  refreshLayersUI();
+  compositeRender();
 }
 
 /* ────────────────────────────────────────────────────────────
-   COMPOSITE RENDER
+   COMPOSITE RENDER — scala wszystkie warstwy na editorCanvas
    ──────────────────────────────────────────────────────────── */
 function compositeRender() {
-  if (typeof renderImage === 'function') renderImage();
-}
+  if (!GP.imageLoaded) return;
+  const cv  = document.getElementById('editorCanvas');
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
 
-function getRenderedCanvas() {
-  const src = document.getElementById('editorCanvas');
-  if (!GP_Layers.list.length) return src;
+  /* Szachownica */
+  if (typeof drawCheckerboardExt === 'function') {
+    drawCheckerboardExt(ctx, cv.width, cv.height);
+  }
 
-  const tmp = document.createElement('canvas');
-  tmp.width  = src.width;
-  tmp.height = src.height;
-  const ctx = tmp.getContext('2d');
-  drawAllLayersToCtx(ctx, tmp.width, tmp.height);
-  return tmp;
+  drawAllLayersToCtx(ctx, cv.width, cv.height);
+
+  /* Zachowaj CSS zoom */
+  cv.style.transform       = `scale(${GP.zoom / 100})`;
+  cv.style.transformOrigin = 'center center';
 }
-window.getRenderedCanvas = getRenderedCanvas;
 
 function drawAllLayersToCtx(ctx, w, h) {
-  /* Draw bottom-to-top */
+  /* Warstwy rysowane od dołu listy w górę (indeks najwyższy = dno) */
   for (let i = GP_Layers.list.length - 1; i >= 0; i--) {
     const layer = GP_Layers.list[i];
     if (!layer.visible) continue;
-    ctx.save();
     ctx.globalAlpha = layer.opacity / 100;
-    if (layer.type === 'raster') {
+    if (layer.type === 'raster' && layer.canvas) {
       ctx.drawImage(layer.canvas, 0, 0, w, h);
-    } else {
-      drawTextLayer(ctx, layer);
+    } else if (layer.type === 'text') {
+      drawTextLayerToCtx(ctx, layer);
     }
-    ctx.restore();
+    ctx.globalAlpha = 1;
   }
 }
 
-function drawTextLayer(ctx, layer) {
+function drawTextLayerToCtx(ctx, layer) {
   const style = `${layer.bold?'bold ':''} ${layer.italic?'italic ':''} ${layer.fontSize}px "${layer.fontFamily}",sans-serif`;
   ctx.font    = style.trim();
   const lines = layer.text.split('\n');
   const lh    = layer.fontSize * 1.4;
 
-  /* Text block background */
+  /* Tło bloku tekstowego */
   if (layer.bgColor) {
     const maxW = lines.reduce((m,l) => Math.max(m, ctx.measureText(l).width), 0);
     const boxH = lines.length * lh + 8;
@@ -217,7 +221,7 @@ function drawTextLayer(ctx, layer) {
 }
 
 /* ────────────────────────────────────────────────────────────
-   LAYERS UI
+   UI WARSTW
    ──────────────────────────────────────────────────────────── */
 function refreshLayersUI() {
   const list = document.getElementById('layersList');
@@ -230,33 +234,23 @@ function refreshLayersUI() {
     item.className = 'layer-item' + (idx === GP_Layers.active ? ' is-active' : '');
     item.dataset.idx = idx;
 
-    const eyeSVG  = layer.visible
-      ? `<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 8 C3 4 13 4 15 8 C13 12 3 12 1 8Z"/><circle cx="8" cy="8" r="2.5"/></svg>`
-      : `<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.3"><line x1="2" y1="2" x2="14" y2="14"/><path d="M4 6C2.5 7 1 8 1 8S5 13 8 13" stroke-linecap="round"/><path d="M12 10C13.5 9 15 8 15 8S11 3 8 3" stroke-linecap="round"/></svg>`;
-    const typeSVG = layer.type === 'text'
-      ? `<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="8" y1="4" x2="8" y2="12"/><line x1="4" y1="4" x2="12" y2="4"/></svg>`
-      : `<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="12" height="12" rx="1"/></svg>`;
+    const eyeIcon  = layer.visible ? '👁' : '🚫';
+    const typeIcon = layer.type === 'text' ? '𝐓' : '▣';
 
     item.innerHTML = `
-      <button class="layer-btn layer-vis" data-idx="${idx}" title="Toggle visibility">${eyeSVG}</button>
-      <span class="layer-type">${typeSVG}</span>
+      <button class="layer-btn layer-vis" data-idx="${idx}" title="Toggle visibility">${eyeIcon}</button>
+      <span class="layer-type">${typeIcon}</span>
       <span class="layer-name" title="${layer.name}">${layer.name}</span>
       <div class="layer-controls">
-        <button class="layer-btn layer-up"  data-idx="${idx}" title="Move up">
-          <svg viewBox="0 0 16 16" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="4,10 8,6 12,10"/></svg>
-        </button>
-        <button class="layer-btn layer-dn"  data-idx="${idx}" title="Move down">
-          <svg viewBox="0 0 16 16" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="4,6 8,10 12,6"/></svg>
-        </button>
-        <button class="layer-btn layer-del" data-idx="${idx}" title="Delete">
-          <svg viewBox="0 0 16 16" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
-        </button>
+        <button class="layer-btn layer-up"   data-idx="${idx}" title="Move up">↑</button>
+        <button class="layer-btn layer-dn"   data-idx="${idx}" title="Move down">↓</button>
+        <button class="layer-btn layer-del"  data-idx="${idx}" title="Delete">✕</button>
       </div>
     `;
 
-    /* Click = select active layer */
+    /* Klik = aktywna warstwa */
     item.addEventListener('click', e => {
-      if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+      if (e.target.tagName === 'BUTTON') return;
       GP_Layers.active = idx;
       refreshLayersUI();
       updateTextToolbar();
@@ -264,7 +258,7 @@ function refreshLayersUI() {
 
     list.appendChild(item);
 
-    /* Opacity slider */
+    /* Opacity suwak */
     const opRow = document.createElement('div');
     opRow.className = 'layer-opacity-row';
     opRow.innerHTML = `
@@ -281,7 +275,7 @@ function refreshLayersUI() {
     list.appendChild(opRow);
   });
 
-  /* Wire up buttons */
+  /* Podpięcie przycisków */
   list.querySelectorAll('.layer-vis').forEach(b => {
     b.addEventListener('click', () => toggleLayerVisibility(+b.dataset.idx));
   });
@@ -300,7 +294,7 @@ function refreshLayersUI() {
 }
 
 /* ────────────────────────────────────────────────────────────
-   TEXT TOOLBAR — active when text layer is selected
+   TOOLBAR TEKSTU — aktywny gdy aktywna warstwa = text
    ──────────────────────────────────────────────────────────── */
 function updateTextToolbar() {
   const layer   = GP_Layers.list[GP_Layers.active];
@@ -313,7 +307,7 @@ function updateTextToolbar() {
   }
   toolbar.style.display = 'flex';
 
-  /* Sync controls */
+  /* Synchronizuj kontrolki */
   const ff = document.getElementById('ttFontFamily');
   const fs = document.getElementById('ttFontSize');
   const fc = document.getElementById('ttFontColor');
@@ -328,10 +322,10 @@ function updateTextToolbar() {
 }
 
 /* ────────────────────────────────────────────────────────────
-   INIT — create layer on first image load
+   INICJALIZACJA — pierwsze załadowanie obrazu → tworzy warstwę
    ──────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-  /* Layer section buttons */
+  /* Przyciski w sekcji Layers */
   document.getElementById('addRasterLayerBtn')?.addEventListener('click', addRasterLayer);
   document.getElementById('addTextLayerBtn')  ?.addEventListener('click', addTextLayer);
   document.getElementById('mergeDownBtn')      ?.addEventListener('click', mergeDown);
@@ -369,11 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (txt !== null) { layer.text = txt.replace(/\\n/g,'\n'); compositeRender(); }
   });
 
-  /* Create layer on first image load */
+  /* Twórz warstwę po załadowaniu pierwszego obrazu */
   const origLoad = window.loadImageFile;
   window.loadImageFile = function(file) {
     origLoad(file);
-    /* Wait for load */
+    /* Poczekaj na załadowanie */
     const check = setInterval(() => {
       if (!GP.imageLoaded) return;
       clearInterval(check);
@@ -388,16 +382,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ────────────────────────────────────────────────────────────
-   EXPORTS
+   EKSPORT
    ──────────────────────────────────────────────────────────── */
-window.addRasterLayer    = addRasterLayer;
-window.addTextLayer      = addTextLayer;
-window.flattenAllLayers  = flattenAllLayers;
-window.compositeRender   = compositeRender;
-window.refreshLayersUI   = refreshLayersUI;
-window.updateTextToolbar = updateTextToolbar;
+window.addRasterLayer   = addRasterLayer;
+window.addTextLayer     = addTextLayer;
+window.flattenAllLayers = flattenAllLayers;
+window.compositeRender  = compositeRender;
+window.refreshLayersUI  = refreshLayersUI;
+window.updateTextToolbar= updateTextToolbar;
 
-/* Update layer counter in right panel */
+/* ────────────────────────────────────────────────────────────
+   Aktualizuj licznik warstw w prawym panelu
+   ──────────────────────────────────────────────────────────── */
 const _origRefreshLayersUI = window.refreshLayersUI;
 window.refreshLayersUI = function() {
   _origRefreshLayersUI && _origRefreshLayersUI();
