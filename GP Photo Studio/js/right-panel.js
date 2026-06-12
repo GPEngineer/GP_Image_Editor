@@ -1,80 +1,73 @@
 /* ============================================================
-   GP Photo Studio 2.1 — right-panel.js  v5.0
-   Prawy panel: collapse/expand, pin, resize (drag left edge)
+   GP Photo Studio 2.1 — right-panel.js  v6.0
+   Prawy panel:
+     • collapse/expand  — klik chowa panel do cienkiego paska;
+                           klik w dowolnym miejscu paska rozwija z powrotem
+     • resize (drag left edge) — przeciąganie lewej krawędzi panelu
+     • (logika "pin" została usunięta)
    ============================================================ */
 "use strict";
 
-const RP_MIN_W  = 180;
-const RP_MAX_W  = 520;
-const RP_DEFAULT= 248;
+const RP_MIN_W       = 180;
+const RP_MAX_W       = 520;
+const RP_DEFAULT     = 248;
+const RP_COLLAPSED_W = 28;     // szerokość cienkiego paska po zwinięciu
 
-let _rpPinned    = true;   // true = panel zajmuje miejsce w layoucie
 let _rpCollapsed = false;
 let _rpWidth     = RP_DEFAULT;
 
 document.addEventListener('DOMContentLoaded', initRightPanel);
 
 function initRightPanel() {
-  const layout     = document.getElementById('appLayout');
-  const panel      = document.getElementById('rightPanel');
-  const collapseBtn= document.getElementById('rpCollapseBtn');
-  const pinBtn     = document.getElementById('rpPinBtn');
-  const handle     = document.getElementById('rpResizeHandle');
+  const layout      = document.getElementById('appLayout');
+  const panel       = document.getElementById('rightPanel');
+  const collapseBtn = document.getElementById('rpCollapseBtn');
+  const handle      = document.getElementById('rpResizeHandle');
 
-  if (!panel) return;
+  if (!panel || !layout) return;
 
   /* ── Collapse / Expand ── */
-  collapseBtn?.addEventListener('click', () => {
-    _rpCollapsed = !_rpCollapsed;
+  function setCollapsed(state) {
+    _rpCollapsed = state;
     layout.classList.toggle('rp-collapsed', _rpCollapsed);
-    collapseBtn.textContent = _rpCollapsed ? '›' : '‹';
-    collapseBtn.title       = _rpCollapsed ? 'Expand panel' : 'Collapse panel';
-    if (!_rpCollapsed) setRPWidth(_rpWidth);
+    if (collapseBtn) {
+      collapseBtn.textContent = _rpCollapsed ? '‹' : '›';
+      collapseBtn.title       = _rpCollapsed ? 'Rozwiń panel' : 'Zwiń panel';
+    }
+    setRPWidth(_rpWidth);
+  }
+
+  // Klik w przycisk chevron — zwija / rozwija.
+  // stopPropagation, żeby nie wywołać od razu handlera całego panelu.
+  collapseBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    setCollapsed(!_rpCollapsed);
   });
 
-  /* ── Pin / Unpin ── */
-  pinBtn?.addEventListener('click', () => {
-    _rpPinned = !_rpPinned;
-    pinBtn.classList.toggle('pinned', _rpPinned);
-    pinBtn.title = _rpPinned ? 'Unpin (floating)' : 'Pin panel';
-
-    if (_rpPinned) {
-      panel.style.position = 'relative';
-      panel.style.right    = '';
-      panel.style.top      = '';
-      panel.style.bottom   = '';
-      panel.style.zIndex   = '';
-      layout.style.gridTemplateColumns = `var(--panel-w) 1fr ${_rpWidth}px`;
-    } else {
-      /* Floating mode — overlay, nie zajmuje miejsca w gridzie */
-      panel.style.position = 'fixed';
-      panel.style.right    = '0';
-      panel.style.top      = '0';
-      panel.style.bottom   = '0';
-      panel.style.zIndex   = '100';
-      panel.style.width    = _rpWidth + 'px';
-      layout.style.gridTemplateColumns = `var(--panel-w) 1fr 0px`;
-    }
+  // Klik w dowolne miejsce zwiniętego paska — rozwija panel.
+  panel.addEventListener('click', () => {
+    if (_rpCollapsed) setCollapsed(false);
   });
 
   /* ── Resize (drag left edge) ── */
-  let _resizing = false;
+  let _resizing     = false;
   let _resizeStartX = 0;
   let _resizeStartW = 0;
 
   handle?.addEventListener('mousedown', e => {
-    if (_rpCollapsed) return;
+    if (_rpCollapsed) return;               // brak resize gdy zwinięty
     _resizing     = true;
     _resizeStartX = e.clientX;
     _resizeStartW = panel.getBoundingClientRect().width;
-    document.body.style.cursor       = 'ew-resize';
-    document.body.style.userSelect   = 'none';
+    document.body.style.cursor     = 'ew-resize';
+    document.body.style.userSelect = 'none';
     e.preventDefault();
+    e.stopPropagation();
   });
 
   window.addEventListener('mousemove', e => {
     if (!_resizing) return;
-    const delta = _resizeStartX - e.clientX;
+    const delta = _resizeStartX - e.clientX;            // ciągnięcie w lewo = szerszy
     const newW  = Math.max(RP_MIN_W, Math.min(RP_MAX_W, _resizeStartW + delta));
     _rpWidth = newW;
     setRPWidth(newW);
@@ -83,8 +76,8 @@ function initRightPanel() {
   window.addEventListener('mouseup', () => {
     if (_resizing) {
       _resizing = false;
-      document.body.style.cursor    = '';
-      document.body.style.userSelect= '';
+      document.body.style.cursor     = '';
+      document.body.style.userSelect = '';
     }
   });
 
@@ -94,16 +87,10 @@ function initRightPanel() {
 
 function setRPWidth(w) {
   const layout = document.getElementById('appLayout');
-  const panel  = document.getElementById('rightPanel');
-  if (!layout || !panel) return;
-
-  if (_rpPinned) {
-    layout.style.gridTemplateColumns = _rpCollapsed
-      ? `var(--panel-w) 1fr 28px`
-      : `var(--panel-w) 1fr ${w}px`;
-  } else {
-    panel.style.width = w + 'px';
-  }
+  if (!layout) return;
+  const rightW = _rpCollapsed ? (RP_COLLAPSED_W + 'px') : (w + 'px');
+  // Ustawiamy wyłącznie kolumny; wiersze (toolbar/workspace) pochodzą z CSS.
+  layout.style.gridTemplateColumns = `var(--panel-w) 1fr ${rightW}`;
 }
 
 window.setRPWidth = setRPWidth;
