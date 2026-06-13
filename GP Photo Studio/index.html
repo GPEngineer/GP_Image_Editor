@@ -1133,23 +1133,15 @@
 
       <!-- ════════ RIGHT PANEL ════════ -->
       <div class="right-panel" id="rightPanel">
-        <!-- Resize handle (left edge) -->
+        <!-- Resize handle (right edge) -->
         <div class="rp-resize-handle" id="rpResizeHandle"></div>
 
-        <!-- Pin / collapse button -->
+        <!-- Collapse / expand tab -->
         <div class="rp-header">
-          <span class="rp-title">Inspector</span>
-          <button
-            class="btn btn--reset rp-pin-btn"
-            id="rpPinBtn"
-            title="Pin / unpin panel"
-          >
-            📌
-          </button>
           <button
             class="btn btn--reset rp-collapse-btn"
             id="rpCollapseBtn"
-            title="Collapse"
+            title="Zwiń / rozwiń panel"
           >
             ‹
           </button>
@@ -1474,5 +1466,74 @@
     <script src="js/right-panel.js"></script>
     <script src="js/transform-rotate.js"></script>
     <script src="js/ui.js"></script>
+  
+    <script>
+      // Right panel layout override: collapse leaves a clickable tab and resize works from the right edge.
+      (() => {
+        const appLayout = document.getElementById("appLayout");
+        const rightPanel = document.getElementById("rightPanel");
+        const oldHandle = document.getElementById("rpResizeHandle");
+        const oldBtn = document.getElementById("rpCollapseBtn");
+        const rpHeader = rightPanel?.querySelector(".rp-header");
+        if (!appLayout || !rightPanel || !oldHandle || !oldBtn) return;
+
+        // Clone nodes to remove listeners possibly registered by js/right-panel.js.
+        const handle = oldHandle.cloneNode(true);
+        oldHandle.replaceWith(handle);
+        const btn = oldBtn.cloneNode(true);
+        oldBtn.replaceWith(btn);
+
+        const minW = 180;
+        const maxW = 520;
+        let savedW = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--right-w"), 10) || 248;
+
+        const setRightWidth = (w) => {
+          const clamped = Math.max(minW, Math.min(maxW, Math.round(w)));
+          savedW = clamped;
+          document.documentElement.style.setProperty("--right-w", `${clamped}px`);
+        };
+
+        const setCollapsed = (collapsed) => {
+          appLayout.classList.toggle("rp-collapsed", collapsed);
+          btn.textContent = collapsed ? "›" : "‹";
+          btn.title = collapsed ? "Rozwiń panel" : "Zwiń panel";
+          if (!collapsed) setRightWidth(savedW);
+        };
+
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setCollapsed(!appLayout.classList.contains("rp-collapsed"));
+        });
+
+        rpHeader?.addEventListener("click", () => {
+          if (appLayout.classList.contains("rp-collapsed")) setCollapsed(false);
+        });
+
+        handle.addEventListener("mousedown", (e) => {
+          if (appLayout.classList.contains("rp-collapsed")) return;
+          e.preventDefault();
+          const startX = e.clientX;
+          const startW = rightPanel.getBoundingClientRect().width;
+          document.body.style.userSelect = "none";
+          document.body.style.cursor = "ew-resize";
+
+          const onMove = (moveEvent) => {
+            // Panel is docked to the viewport's right edge, so moving left increases width.
+            setRightWidth(startW + (startX - moveEvent.clientX));
+          };
+          const onUp = () => {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            document.body.style.userSelect = "";
+            document.body.style.cursor = "";
+          };
+          document.addEventListener("mousemove", onMove);
+          document.addEventListener("mouseup", onUp);
+        });
+
+        setCollapsed(appLayout.classList.contains("rp-collapsed"));
+      })();
+    </script>
   </body>
 </html>
