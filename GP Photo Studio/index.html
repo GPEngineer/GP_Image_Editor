@@ -1477,7 +1477,7 @@
         const rpHeader = rightPanel?.querySelector(".rp-header");
         if (!appLayout || !rightPanel || !oldHandle || !oldBtn) return;
 
-        // Clone nodes to remove listeners possibly registered by js/right-panel.js.
+        // Clone nodes to remove listeners possibly registered by js/right-panel.js .
         const handle = oldHandle.cloneNode(true);
         oldHandle.replaceWith(handle);
         const btn = oldBtn.cloneNode(true);
