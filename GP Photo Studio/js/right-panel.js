@@ -67,7 +67,7 @@ function initRightPanel() {
 
   window.addEventListener('mousemove', e => {
     if (!_resizing) return;
-    const delta = _resizeStartX - e.clientX;            // ciągnięcie w lewo = szerszy
+    const delta = _resizeStartX - e.clientX;            //  ciągnięcie w lewo = szerszy
     const newW  = Math.max(RP_MIN_W, Math.min(RP_MAX_W, _resizeStartW + delta));
     _rpWidth = newW;
     setRPWidth(newW);
