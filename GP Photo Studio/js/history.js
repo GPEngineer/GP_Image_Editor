@@ -1,7 +1,7 @@
 /* ============================================================
    GP Photo Studio 2.1 — history.js  v4.0
    Stack historii, undo/redo, wizualna lista, zapis do History_list
-   ============================================================ */
+   ============================================================  */
 "use strict";
 
 const HISTORY_LIMIT = 20;
