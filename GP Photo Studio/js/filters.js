@@ -1,7 +1,7 @@
 /* ============================================================
    GP Photo Studio 2.1 — filters.js
    Placeholder + applyVignette helper
-   ============================================================  */
+   ============================================================ */
 "use strict";
 
 /* Future custom pixel-manipulation filters go here */
