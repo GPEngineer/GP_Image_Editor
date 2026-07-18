@@ -1,7 +1,7 @@
 /* ============================================================
    GP Photo Studio 2.1 — canvas-renderer.js  v5.0
    Renderowanie z filtrami CSS + swobodny kąt obrotu
-   ============================================================ */
+   ============================================================  */
 "use strict";
 
 function drawCheckerboard(ctx, w, h) {
