@@ -28,7 +28,7 @@
     <!-- TOAST -->
     <div class="toast" id="gpToast"></div>
 
-    <!-- ══════════════════════════════════════════════════  
+    <!-- ══════════════════════════════════════════════  
      LAYOUT:   [LEFT col] | [CENTER col] | [RIGHT panel] -
      LEFT col  = header + scrollable panel + footer   (fixed width)
      CENTER    = toolbar + rulers + canvas (flex-grow)
@@ -1467,7 +1467,7 @@
     <script src="js/right-panel.js"></script>
     <script src="js/transform-rotate.js"></script>
     <script src="js/ui.js"></script>
-  
+
     <script>
       // Right panel layout override : collapse leaves a clickable  tab and resize works from the right edge.
       (() => {
@@ -1486,12 +1486,21 @@
 
         const minW = 180;
         const maxW = 520;
-        let savedW = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--right-w"), 10) || 248;
+        let savedW =
+          parseInt(
+            getComputedStyle(document.documentElement).getPropertyValue(
+              "--right-w",
+            ),
+            10,
+          ) || 248;
 
         const setRightWidth = (w) => {
           const clamped = Math.max(minW, Math.min(maxW, Math.round(w)));
           savedW = clamped;
-          document.documentElement.style.setProperty("--right-w", `${clamped}px`);
+          document.documentElement.style.setProperty(
+            "--right-w",
+            `${clamped}px`,
+          );
         };
 
         const setCollapsed = (collapsed) => {
